@@ -20,8 +20,10 @@ def approximateUsingPiecewiseLinear(L,num, marked, ths):
         y = column(pixelList, 1)
         #plt.plot(y,x)
         #plt.show()
-        p=np.polyfit(y, x, 1)
-
+        try:
+            p=np.polyfit(y, x, 1)
+        except:
+            continue
         y_hat = np.polyval(p, y)
 
         fit = norm(y_hat-x, 1) / len(y)

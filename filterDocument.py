@@ -1,7 +1,7 @@
 import numpy as np
 from applyFilters import applyFilters
 def filterDocument(im,scales):
-    im = np.uint8(im) * 255
+   # im = np.uint8(im) * 255
     sz = [len(im),len(im[0])]
 
 

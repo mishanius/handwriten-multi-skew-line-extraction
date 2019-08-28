@@ -7,7 +7,7 @@ from PostProcessByMRF import  *
 from matplotlib import pylab as pt
 from skimage.color import label2rgb
 # Load an color image in grayscale
-I = cv2.imread('101.tif',0)
+I = cv2.imread('binary_hetero_doc.png', 0)
 bin = cv2.bitwise_not(I)
 
 
