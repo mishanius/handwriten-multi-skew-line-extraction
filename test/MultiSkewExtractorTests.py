@@ -1,17 +1,9 @@
 import unittest
 import cv2
-from numpy.ma import arange
 from skimage.filters import threshold_niblack, apply_hysteresis_threshold
 from skimage.filters.thresholding import _mean_std
-from numpy import linspace, exp
-from numpy.random import randn
-from scipy.interpolate import UnivariateSpline
 from skimage.measure import regionprops
-from skimage.morphology import skeletonize
 
-from anigauss.ani import circletest
-from anigauss.ani import anigauss
-from plantcv import plantcv as pcv
 from extractors.LineExtractorBase import LineExtractorBase
 # from extractors.MultiSkewExtractor import MultiSkewExtractor
 import numpy as np
@@ -23,22 +15,6 @@ from utils.label_broken_lines import concatenate_pixel_lists, label_broken_lines
 
 
 class MultiSkewExtractorTests(unittest.TestCase):
-    # def test_basic_functionality(self):
-    #     delta_theta = 25
-    #     theta = arange(0, 180, delta_theta)
-    #     multi: MultiSkewExtractor = MultiSkewExtractor("ms_25_short.png")
-    #     multi.extract_lines(theta)
-    #     print("ok")
-    def test_splines2(self):
-        from scipy.interpolate import interp1d
-        from scipy.optimize import fmin
-        import numpy as np
-        import matplotlib.pyplot as plt
-
-        x = np.array([0, 1, 2, 3, 4])
-        y = np.array([0., 0.308, 0.55, 0.546, 0.44])
-        f = interp1d(x, y, kind='linear', bounds_error=False)
-
     def test_split_lines(self):
         lines = np.array([[0, 1, 1, 1],
                           [1, 1, 0, 0],
@@ -46,9 +22,9 @@ class MultiSkewExtractorTests(unittest.TestCase):
                           [0, 1, 1, 1],
                           [1, 1, 1, 1],
                           [0, 0, 1, 0]])
-        print(MultiSkewExtractor.split_lines(lines, 0.3))
-
-
+        plt.imshow(lines)
+        plt.show()
+        # print(MultiSkewExtractor.split_lines(lines, 0.3))
 
     def test_label_broken_lines(self):
         lines2split = np.array([[0, 0, 0, 1],
@@ -111,67 +87,27 @@ class MultiSkewExtractorTests(unittest.TestCase):
     def test_apply_filters_functionality(self):
         cm = plt.get_cmap('gray')
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
-        image_mock = np.array([[10, 11, 12, 13],
-                               [14, 15, 16, 17],
-                               [18, 19, 20, 21],
-                               [22, 23, 24, 25]])
-        [res, response] = LineExtractorBase.apply_filters(image_mock, (4, 4), 10, theta=[1, 2, 3, 4, 5],
-                                                          func_to_apply=MultiSkewExtractorTests.dummy_func)
-        assert np.array_equal(response, np.array([[17., 17., 17., 17.],
-                                                  [15., 15., 15., 15.],
-                                                  [10., 10., 10., 10.],
-                                                  [16., 16., 16., 16.]]))
-        assert np.array_equal(res, np.array([[0., 0., 0., 0.],
-                                             [2., 2., 2., 2.],
-                                             [1., 1., 1., 1.],
-                                             [2., 2., 2., 2.]]))
-        #     using the actual anigause function
-        image_mock = np.array([[100, 200, 300, 400, 500],
-                               [100, 200, 300, 400, 500],
-                               [100, 200, 300, 400, 500],
-                               [100, 200, 300, 400, 500],
-                               [100, 200, 300, 400, 500]], dtype=np.int32)
         im = cv2.imread('ms_25_short.png', 0)
-
-        nangles = 32
-        angles = np.arange(0, 180, 25)
-        # [res, onlyfilter_response] = LineExtractorBase.apply_filters(im, (len(im), len(im[1])), 16.8, theta=angles)
-        _, _, response = MultiSkewExtractor.filter_document(im, [12.2, 16.8], angles)
+        angles = np.arange(0, 155, 25)
+        _, _, response = MultiSkewExtractor.filter_document(im, [16.8], angles)
         response = np.double(response)
         m, s = _mean_std(response, int(16.8) * 2 + 1)
         high = 22
         low = 8
         thresh_niblack2 = np.divide((response - m), s) * 20
-        thresh_niblack = threshold_niblack(response, 16 * 2 + 1, 0.2)
-        # binary_niblack = response > thresh_niblack
-        lines = apply_hysteresis_threshold(thresh_niblack2, low, high)
-        scale = 16.8
-        eta = 3
-        # plt.imshow(res, **kw)
-        # plt.title('orientation')
-        # a = anigauss(im, scale, eta * scale, 12, 2, 0)
-        # plt.subplot(2, 3, 1)
-        # plt.imshow(thresh_niblack2,**kw)
-        # plt.title('niblack')
-
-        # plt.subplot(2, 3, 2)
-        # plt.imshow(response, **kw)
-        # plt.title('response')
-
-        # plt.subplot(2, 3, 3)
-        # plt.imshow(lines, **kw)
-        # plt.title('lines')
-        #
-        plt.subplot(2, 3, 4)
-        plt.imshow(lines, **kw)
-        plt.title('lines')
-
-        plt.subplot(2, 3, 5)
+        plt.subplot(1, 3, 3)
         plt.imshow(thresh_niblack2, **kw)
         plt.title('thresh_niblack2')
-        plt.show()
+        lines = apply_hysteresis_threshold(thresh_niblack2, low, high)
 
-        # circletest()
+        plt.subplot(1, 3, 1)
+        plt.imshow(response, **kw)
+        plt.title('response')
+
+        plt.subplot(1, 3, 2)
+        plt.imshow(lines, **kw)
+        plt.title('lines')
+        plt.show()
         print("done")
 
     @staticmethod
