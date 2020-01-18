@@ -6,16 +6,20 @@ from LineExtraction import *
 from PostProcessByMRF import  *
 from matplotlib import pylab as pt
 from skimage.color import label2rgb
-# Load an color image in grayscale
-I = cv2.imread('binary_hetero_doc.png', 0)
-bin = cv2.bitwise_not(I)
 
 
+image = cv2.imread('ms_25.png', 0)
+bin = cv2.bitwise_not(image)
 
 charRange = estimateBinaryHeight(bin)
 
 
-LineMask = LineExtraction(I, charRange)
+
+
+
+
+
+# LineMask = LineExtraction(I, charRange)
 # LineMask2 = LineMask.astype(int)
 # LineMask2[LineMask==False] = 0
 # LineMask2[LineMask==True] = 255

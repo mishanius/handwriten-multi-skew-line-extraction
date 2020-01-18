@@ -15,7 +15,8 @@ def computeNsSystem(L, num):
     for j in range(K):
         for i in range(num):
             sparseNs[i, indexes[i, j]] = distances[i, j]
-
-    temp = np.abs(np.min(sparseNs - sparseNs.transpose(), 0)) + sparseNs
+    temp = sparseNs - sparseNs.transpose()
+    temp[temp > 0] = 0
+    temp = np.abs(temp)+ sparseNs
     sparseNs = np.triu(temp)
     return sparseNs

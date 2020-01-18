@@ -1,4 +1,6 @@
 import numpy as np
+
+
 def permuteLabels(Lines):
     Lines = Lines.astype(np.uint16)
     uniqueLabels = np.unique(np.array(Lines))

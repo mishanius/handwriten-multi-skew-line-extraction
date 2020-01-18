@@ -1,5 +1,5 @@
 import numpy as np
-from ani import anigauss
+from anigauss.ani import anigauss
 def applyFilters(inImage,sz, scale,theta = 0,eta =3):
        # inImage = inImage * 255
         response = anigauss(inImage,scale, eta*scale, theta,2,0)

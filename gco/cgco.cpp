@@ -49,7 +49,7 @@ void removeInstance(int handle)
     _gcoInstanceMap.erase(handle);
 }
 
-extern "C" int gcoCreateGeneralGraph(SiteID numSites, LabelID numLabels, int *handle)
+extern "C" __declspec(dllexport) int gcoCreateGeneralGraph(SiteID numSites, LabelID numLabels, int *handle)
 {
     GCoptimization *gco = new GCoptimizationGeneralGraph(numSites, numLabels);
     _gcoInstanceMap[_gcoNextInstanceId] = gco;
@@ -58,27 +58,27 @@ extern "C" int gcoCreateGeneralGraph(SiteID numSites, LabelID numLabels, int *ha
     return 0;
 }
 
-extern "C" int gcoDestroyGraph(int handle)
+extern "C" __declspec(dllexport) int gcoDestroyGraph(int handle)
 {
     removeInstance(handle);
     return 0;
 }
 
-extern "C" int gcoSetDataCost(int handle, EnergyTermType *unary)
+extern "C" __declspec(dllexport) int gcoSetDataCost(int handle, EnergyTermType *unary)
 {
     GCoptimization *gco = findInstance(handle);
     gco->setDataCost(unary);
     return 0;
 }
 
-extern "C" int gcoSetSiteDataCost(int handle, SiteID site, LabelID label, EnergyTermType e)
+extern "C" __declspec(dllexport) int gcoSetSiteDataCost(int handle, SiteID site, LabelID label, EnergyTermType e)
 {
     GCoptimization *gco = findInstance(handle);
     gco->setDataCost(site, label, e);
     return 0;
 }
 
-extern "C" int gcoSetNeighborPair(int handle, SiteID s1, SiteID s2, EnergyTermType e)
+extern "C" __declspec(dllexport) int gcoSetNeighborPair(int handle, SiteID s1, SiteID s2, EnergyTermType e)
 {
     GCoptimizationGeneralGraph *gco = (GCoptimizationGeneralGraph*)findInstance(handle);
     if (s1 < s2)
@@ -86,7 +86,7 @@ extern "C" int gcoSetNeighborPair(int handle, SiteID s1, SiteID s2, EnergyTermTy
     return 0;
 }
 
-extern "C" int gcoSetAllNeighbors(int handle, SiteID *s1, SiteID *s2, EnergyTermType *e, int nPairs)
+extern "C" __declspec(dllexport) int gcoSetAllNeighbors(int handle, SiteID *s1, SiteID *s2, EnergyTermType *e, int nPairs)
 {
     GCoptimizationGeneralGraph *gco = (GCoptimizationGeneralGraph*)findInstance(handle);
     for (int i = 0; i < nPairs; i++)
@@ -95,14 +95,14 @@ extern "C" int gcoSetAllNeighbors(int handle, SiteID *s1, SiteID *s2, EnergyTerm
     return 0;
 }
 
-extern "C" int gcoSetSmoothCost(int handle, EnergyTermType *e)
+extern "C" __declspec(dllexport) int gcoSetSmoothCost(int handle, EnergyTermType *e)
 {
     GCoptimization *gco = findInstance(handle);
     gco->setSmoothCost(e);
     return 0;
 }
 
-extern "C" int gcoSetLabelCost(int handle, EnergyTermType *e)
+extern "C" __declspec(dllexport) int gcoSetLabelCost(int handle, EnergyTermType *e)
 {
     GCoptimization *gco = findInstance(handle);
     gco->setLabelCost(e);
@@ -110,28 +110,28 @@ extern "C" int gcoSetLabelCost(int handle, EnergyTermType *e)
 }
 
 
-extern "C" int gcoSetPairSmoothCost(int handle, LabelID l1, LabelID l2, EnergyTermType e)
+extern "C" __declspec(dllexport) int gcoSetPairSmoothCost(int handle, LabelID l1, LabelID l2, EnergyTermType e)
 {
     GCoptimization *gco = findInstance(handle);
     gco->setSmoothCost(l1, l2, e);
     return 0;
 }
 
-extern "C" int gcoSetSmoothCostFunction(int handle, EnergyTermType (*fun)(SiteID, SiteID, LabelID, LabelID))
+extern "C" __declspec(dllexport) int gcoSetSmoothCostFunction(int handle, EnergyTermType (*fun)(SiteID, SiteID, LabelID, LabelID))
 {
     GCoptimization *gco = findInstance(handle);
     gco->setSmoothCost(fun);
     return 0;
 }
 
-extern "C" int gcoExpansion(int handle, int maxNumIters, EnergyType *e)
+extern "C" __declspec(dllexport) int gcoExpansion(int handle, int maxNumIters, EnergyType *e)
 {
     GCoptimization *gco = findInstance(handle);
     *e = gco->expansion(maxNumIters);
     return 0;
 }
 
-extern "C" int gcoExpansionOnAlpha(int handle, LabelID label, int *success)
+extern "C" __declspec(dllexport) int gcoExpansionOnAlpha(int handle, LabelID label, int *success)
 {
     GCoptimization *gco = findInstance(handle);
     if (gco->alpha_expansion(label))
@@ -141,56 +141,56 @@ extern "C" int gcoExpansionOnAlpha(int handle, LabelID label, int *success)
     return 0;
 }
 
-extern "C" int gcoSwap(int handle, int maxNumIters, EnergyType *e)
+extern "C" __declspec(dllexport) int gcoSwap(int handle, int maxNumIters, EnergyType *e)
 {
     GCoptimization *gco = findInstance(handle);
     *e = gco->swap(maxNumIters);
     return 0;
 }
 
-extern "C" int gcoAlphaBetaSwap(int handle, LabelID l1, LabelID l2)
+extern "C" __declspec(dllexport) int gcoAlphaBetaSwap(int handle, LabelID l1, LabelID l2)
 {
     GCoptimization *gco = findInstance(handle);
     gco->alpha_beta_swap(l1, l2);
     return 0;
 }
 
-extern "C" int gcoComputeEnergy(int handle, EnergyType *e)
+extern "C" __declspec(dllexport) int gcoComputeEnergy(int handle, EnergyType *e)
 {
     GCoptimization *gco = findInstance(handle);
     *e = gco->compute_energy();
     return 0;
 }
 
-extern "C" int gcoComputeDataEnergy(int handle, EnergyType *e)
+extern "C" __declspec(dllexport) int gcoComputeDataEnergy(int handle, EnergyType *e)
 {
     GCoptimization *gco = findInstance(handle);
     *e = gco->giveDataEnergy();
     return 0;
 }
 
-extern "C" int gcoComputeSmoothEnergy(int handle, EnergyType *e)
+extern "C" __declspec(dllexport) int gcoComputeSmoothEnergy(int handle, EnergyType *e)
 {
     GCoptimization *gco = findInstance(handle);
     *e = gco->giveSmoothEnergy();
     return 0;
 }
 
-extern "C" int gcoGetLabelAtSite(int handle, SiteID site, LabelID *label)
+extern "C" __declspec(dllexport) int gcoGetLabelAtSite(int handle, SiteID site, LabelID *label)
 {
     GCoptimization *gco = findInstance(handle);
     *label = gco->whatLabel(site);
     return 0;
 }
 
-extern "C" int gcoGetLabels(int handle, LabelID *labels)
+extern "C" __declspec(dllexport) int gcoGetLabels(int handle, LabelID *labels)
 {
     GCoptimization *gco = findInstance(handle);
     gco->whatLabel(0, gco->numSites(), labels);
     return 0;
 }
 
-extern "C" int gcoInitLabelAtSite(int handle, SiteID site, LabelID label)
+extern "C" __declspec(dllexport) int gcoInitLabelAtSite(int handle, SiteID site, LabelID label)
 {
     GCoptimization *gco = findInstance(handle);
     gco->setLabel(site, label);
