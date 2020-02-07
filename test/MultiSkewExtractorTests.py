@@ -3,9 +3,8 @@ import cv2
 from skimage.filters import threshold_niblack, apply_hysteresis_threshold
 from skimage.filters.thresholding import _mean_std
 from skimage.measure import regionprops
-
+import math
 from extractors.LineExtractorBase import LineExtractorBase
-# from extractors.MultiSkewExtractor import MultiSkewExtractor
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -89,22 +88,28 @@ class MultiSkewExtractorTests(unittest.TestCase):
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
         im = cv2.imread('ms_25_short.png', 0)
         angles = np.arange(0, 155, 25)
-        _, _, response = MultiSkewExtractor.filter_document(im, [16.8], angles)
+        scales = [16.8, 22.5]
+        orient, _, response = MultiSkewExtractor.filter_document(im, scales, angles)
+        print(response[99:119, 99:119])
+        print("\norient:{}\n\n".format(orient[99:119, 99:119]))
         response = np.double(response)
-        m, s = _mean_std(response, int(16.8) * 2 + 1)
+        m, s = _mean_std(response, int(math.ceil(22.5) * 2 + 1))
+        print("\nmean:{}\n\n".format(m[99:119, 99:119]))
+        print("\nstd:{}\n\n".format(s[99:119, 99:119]))
         high = 22
         low = 8
         thresh_niblack2 = np.divide((response - m), s) * 20
-        plt.subplot(1, 3, 3)
-        plt.imshow(thresh_niblack2, **kw)
-        plt.title('thresh_niblack2')
+
+        # plt.subplot(1, 3, 3)
+        # plt.imshow(thresh_niblack2, **kw)
+        # plt.title('thresh_niblack2')
         lines = apply_hysteresis_threshold(thresh_niblack2, low, high)
+        print("\nlines:{}\n\n".format(lines[99:119, 99:119]))
+        # plt.subplot(1, 3, 1)
+        # plt.imshow(response, **kw)
+        # plt.title('response')
 
-        plt.subplot(1, 3, 1)
-        plt.imshow(response, **kw)
-        plt.title('response')
-
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, 1, 1)
         plt.imshow(lines, **kw)
         plt.title('lines')
         plt.show()

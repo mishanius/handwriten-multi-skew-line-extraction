@@ -9,8 +9,7 @@ from scipy.interpolate import UnivariateSpline
 from skimage.measure import regionprops
 from skimage.morphology import skeletonize
 
-from anigauss.ani import circletest
-from anigauss.ani import anigauss
+from anigauss.matlabicani import anigauss
 from plantcv import plantcv as pcv
 from extractors.LineExtractorBase import LineExtractorBase
 # from extractors.MultiSkewExtractor import MultiSkewExtractor
@@ -108,6 +107,11 @@ class Playground(unittest.TestCase):
         plt.imshow(im)
         plt.show()
 
+    def test_whole_flow(self):
+        angles = np.arange(0, 155, 25)
+        multi_extractor = MultiSkewExtractor('ms_25_short.png')
+        multi_extractor.extract_lines(angles)
+
     def test_apply_filters_functionality(self):
         cm = plt.get_cmap('gray')
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
@@ -134,14 +138,14 @@ class Playground(unittest.TestCase):
         im = cv2.imread('ms_25_short.png', 0)
         nangles = 32
         angles = np.arange(0, 155, 25)
-        [res, onlyfilter_response] = LineExtractorBase.apply_filters(im, (len(im), len(im[1])), 21.8632, theta=angles)
-        print(res[100:120,100:120])
-        print("{}-{}".format(angles[5], angles[4]))
-        plt.subplot(1, 1, 1)
-        plt.imshow(onlyfilter_response, **kw)
-        plt.title('onlyfilter_response')
-        plt.show()
-        # _, _, response = MultiSkewExtractor.filter_document(im, [12.2, 16.8], angles)
+        # [res, onlyfilter_response] = LineExtractorBase.apply_filters(im, (len(im), len(im[1])), 21.8632, theta=angles)
+        # print(res[100:120,100:120])
+        # print("{}-{}".format(angles[5], angles[4]))
+        # plt.subplot(1, 1, 1)
+        # plt.imshow(onlyfilter_response, **kw)
+        # plt.title('onlyfilter_response')
+        # plt.show()
+        _, _, response = MultiSkewExtractor.filter_document(im, [12.2, 16.8], angles)
         # response = np.double(response)
         # m, s = _mean_std(response, int(16.8) * 2 + 1)
         # high = 22
@@ -182,25 +186,31 @@ class Playground(unittest.TestCase):
     def test_apply_filter_test(self):
         cm = plt.get_cmap('gray')
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
-        im = np.full((10,10),0)
-        im[:,0:10] = [255.]
+        im = np.full((500,500),0)
+        im[:,0:20] = [255.]
         # im[1,:] = [1]
         angles = np.arange(0, 155, 25)
-        r = anigauss(im, 21.8632, 3 * 21.8632, angles[0], 2, 0)
-        [res, onlyfilter_response] = LineExtractorBase.apply_filters(im, (len(im), len(im[1])), 21.8632, theta=angles)
-        # _, _, response = LineExtractorBase.filter_document(im, [16.8,22.5], angles)
+        # r = anigauss(im, 21.8632, 3 * 21.8632, 0, 2, 0)
+        scale = 21.8632
+        # [res, onlyfilter_response] = LineExtractorBase.apply_filters(im, (len(im), len(im[1])), 21.8632, theta=angles)
+        res, _, onlyfilter_response = LineExtractorBase.filter_document(im, [16.8, 22.5], angles)
+        # print(onlyfilter_response[99:109, 99:109])
+        # onlyfilter_response = (scale * scale * 3) ** (2 / 2) * onlyfilter_response
+        # onlyfilter_response = onlyfilter_response.reshape((500,500))
+        print(res[99:119, 99:119])
+        print(onlyfilter_response[99:109, 99:109])
+
         # response[0:10,0:10]=[0]
-        print(r)
         # print("{}-{}".format(angles[0], angles[3]))
         # response[response>255]=[255]
         # response[response < 0] = [0]
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(response,**kw)
-        # plt.title('response')
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(im,**kw)
-        # plt.title('original')
-        # plt.show()
+        plt.subplot(1, 2, 1)
+        plt.imshow(onlyfilter_response,**kw)
+        plt.title('onlyfilter_response')
+        plt.subplot(1, 2, 2)
+        plt.imshow(im,**kw)
+        plt.title('original')
+        plt.show()
 
     @staticmethod
     def dummy_func(a, b, c, theta, e, f):

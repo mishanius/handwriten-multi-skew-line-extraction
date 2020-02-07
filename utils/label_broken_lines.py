@@ -10,7 +10,7 @@ def label_broken_lines(lines2split, broken_lines, labeled_lines_num):
     dist, indexes_of_neighboors = one_nn.kneighbors(y[:, 0:2])
     res = np.zeros(lines2split.shape)
     for i in range(len(y)):
-        res[int(y[i, 0]), int(y[i, 1])] = int(x[indexes_of_neighboors[i], 2] + labeled_lines_num)
+        res[int(y[i, 0]), int(y[i, 1])] = int(x[indexes_of_neighboors[i], 2] +  labeled_lines_num)
 
     broken_lines_num = max(np.amax(res), labeled_lines_num)
     return [res, broken_lines_num]

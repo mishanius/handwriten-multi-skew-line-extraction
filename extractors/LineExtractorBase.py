@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 import numpy as np
 
-from anigauss.ani import anigauss
+from anigauss.matlabicani import anigauss
 import cv2
 
 from estimateBinaryHeight import estimateBinaryHeight
@@ -13,7 +13,7 @@ class LineExtractorBase(ABC):
     def __init__(self, image_path):
         self.image_to_process = cv2.imread(image_path, 0)
         self.bin_image = cv2.bitwise_not(self.image_to_process)
-        self.char_range = estimateBinaryHeight(self.bin_image)
+        self.char_range = [16.8632, 17.8632, 18.8632, 19.8632, 20.8632, 21.8632]#estimateBinaryHeight(self.bin_image)
         super().__init__()
 
     @abstractmethod
@@ -29,13 +29,13 @@ class LineExtractorBase(ABC):
         max_loc = np.full((1, sz[0] * sz[1]),  -np.inf)
         # responses = np.empty((len(theta), sz[0]*sz[1]))
         for index, t in enumerate(theta):
-            max_responses[1, :] = func_to_apply(in_image, scale, eta * scale, t, 2, 0).flatten()
+            f = func_to_apply(in_image, scale, eta * scale, t, 2, 0)
+            max_responses[1, :] = f.flatten()
             max_loc[0, np.argmax(max_responses, 0) > 0] = [index]
             max_responses[0, :] = np.amax(max_responses, 0)
 
         res = np.reshape(max_loc, (sz[0], sz[1]))
         response = np.reshape(max_responses[0, :], (sz[0], sz[1]))
-
         return [res, response]
 
     @staticmethod
@@ -51,6 +51,7 @@ class LineExtractorBase(ABC):
         gamma = 2
         for scale in scales:
             [orientation, response] = LineExtractorBase.apply_filters(im, sz, scale, theta)
+            print("response:{}".format(response[99:120,99:120]))
             flat_response = response.flatten()
             response_map[1,:] = (scale * scale * eta) ** (gamma / 2) * flat_response
 
@@ -68,5 +69,5 @@ class LineExtractorBase(ABC):
         mat_size = (sz[0], sz[1])
         scales_res = scales_res.reshape(mat_size)
         max_response = response_map[0].reshape(mat_size)
-
+        print("max_response:{}".format(max_response))
         return [np.reshape(orientation_map,mat_size), scales_res, max_response]
