@@ -36,7 +36,7 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
         mask = dilate(logical_double, se, 1)
         res = estimate_local_orientations(max_orientation, max_response, theta, mask)
         index = np.argmax(res[:, 1])
-        local_max_orientation[i] = res[index, 1]
+        local_max_orientation[i] = res[index, 0]
         label_cost[i] = 10 * np.exp(50 * (1 - abs(np.cos(math.radians(local_max_orientation[i]) - line_theta[i]))))
     return label_cost
 
@@ -48,7 +48,7 @@ def estimate_local_orientations(max_orientation, max_response, theta, mask):
     flat_response = max_response.flatten()
     for i in range(len(flat_img)):
         if flat_mask[i] and flat_img[i]:
-            loc = flat_img[i]
+            loc = int(flat_img[i])
             res[loc, 0] = theta[loc]
             res[loc, 1] = res[loc, 1] + flat_response[i]
     return res

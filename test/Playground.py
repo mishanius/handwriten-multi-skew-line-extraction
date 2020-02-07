@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from extractors.MultiSkewExtractor import MultiSkewExtractor
 from utils.approximate_using_piecewise_linear_pca import approximate_using_piecewise_linear_pca
 from utils.label_broken_lines import concatenate_pixel_lists, label_broken_lines
+from utils.local_orientation_label_cost import local_orientation_label_cost
 
 
 class Playground(unittest.TestCase):
@@ -46,8 +47,6 @@ class Playground(unittest.TestCase):
                           [1, 1, 1, 1],
                           [0, 0, 1, 0]])
         print(MultiSkewExtractor.split_lines(lines, 0.3))
-
-
 
     def test_label_broken_lines(self):
         lines2split = np.array([[0, 0, 0, 1],
@@ -186,8 +185,8 @@ class Playground(unittest.TestCase):
     def test_apply_filter_test(self):
         cm = plt.get_cmap('gray')
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
-        im = np.full((500,500),0)
-        im[:,0:20] = [255.]
+        im = np.full((500, 500), 0)
+        im[:, 0:20] = [255.]
         # im[1,:] = [1]
         angles = np.arange(0, 155, 25)
         # r = anigauss(im, 21.8632, 3 * 21.8632, 0, 2, 0)
@@ -205,12 +204,73 @@ class Playground(unittest.TestCase):
         # response[response>255]=[255]
         # response[response < 0] = [0]
         plt.subplot(1, 2, 1)
-        plt.imshow(onlyfilter_response,**kw)
+        plt.imshow(onlyfilter_response, **kw)
         plt.title('onlyfilter_response')
         plt.subplot(1, 2, 2)
-        plt.imshow(im,**kw)
+        plt.imshow(im, **kw)
         plt.title('original')
         plt.show()
+
+    def test_compute_label_cost(self):
+        img = np.array(
+            [[1, 1, 0, 0, 0, 1, 1, 0],
+             [1, 1, 0, 0, 0, 1, 1, 0],
+             [1, 1, 0, 0, 0, 1, 1, 0],
+             [0, 1, 1, 0, 0, 1, 1, 0],
+             [0, 0, 1, 1, 0, 1, 1, 0],
+             [0, 0, 0, 0, 0, 1, 1, 0],
+             [1, 1, 1, 1, 1, 1, 0, 0],
+             [0, 1, 1, 1, 0, 0, 0, 0]])
+
+        labled_lines_original = np.array(
+            [[1, 1, 0, 0, 0, 2, 2, 0],
+             [1, 1, 0, 0, 0, 2, 2, 0],
+             [1, 1, 0, 0, 0, 2, 2, 0],
+             [0, 1, 1, 0, 0, 2, 2, 0],
+             [0, 0, 1, 1, 0, 2, 2, 0],
+             [0, 0, 0, 0, 0, 2, 2, 0],
+             [2, 2, 2, 2, 2, 2, 0, 0],
+             [0, 2, 2, 2, 0, 0, 0, 0]])
+
+        labeled_lines = np.array(
+            [[1, 1, 0, 0, 0, 3, 3, 0],
+             [1, 1, 0, 0, 0, 3, 3, 0],
+             [1, 1, 0, 0, 0, 3, 3, 0],
+             [0, 1, 1, 0, 0, 3, 3, 0],
+             [0, 0, 1, 1, 0, 3, 3, 0],
+             [0, 0, 0, 0, 0, 3, 3, 0],
+             [2, 2, 2, 2, 2, 2, 0, 0],
+             [0, 2, 2, 2, 0, 0, 0, 0]])
+
+        char_range = [2, 3, 4]
+        theta = [0, 25, 50, 75, 90, 120, 140, 160, 180]
+        max_orientation, _, max_response = MultiSkewExtractor.filter_document(img, char_range,
+                                                                              theta)
+        print("max_orientation:\n{},\n max_response:\n{}\n".format(max_orientation,max_response))
+
+        # compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
+        #                         max_orientation, max_response, theta)
+        # (raw_labeled_lines, labeled_lines, labeled_lines_num, intact_lines_num, max_orientation,
+        #  max_response, theta):
+        labeled_lines_num=3
+        acc = np.zeros((labeled_lines_num + 1, 1))
+        mask_ = labled_lines_original.flatten()
+        raw_labeled_lines_temp = labeled_lines.flatten()
+        for index, (label, masked_label) in enumerate(zip(raw_labeled_lines_temp, mask_)):
+            if label and masked_label:
+                acc[label - 1] = acc[label - 1] + 1
+        density_label_cost = np.exp(0.2 * np.amax(acc) / acc)
+        intact_lines_num=1
+        density_label_cost[intact_lines_num + 1:] = 0
+        if intact_lines_num != labeled_lines_num:
+            orientation_label_cost = local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_num,
+                                                                  max_orientation, max_response,
+                                                                  theta, radius_constant=2)
+        else:
+            orientation_label_cost = np.zeros(labeled_lines_num + 1, 1)
+        print("orientation_label_cost:{}".format(orientation_label_cost))
+        res =  orientation_label_cost + density_label_cost
+        print("res:{}".format(res))
 
     @staticmethod
     def dummy_func(a, b, c, theta, e, f):

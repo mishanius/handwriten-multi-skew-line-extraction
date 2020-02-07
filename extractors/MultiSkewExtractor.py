@@ -7,8 +7,9 @@ from skimage.measure import regionprops
 from skimage.morphology import reconstruction
 from extractors.LineExtractorBase import LineExtractorBase
 from scipy.ndimage import label as bwlabel
+import cv2
 import numpy as np
-
+import matplotlib.pyplot as plt
 from utils.approximate_using_piecewise_linear_pca import approximate_using_piecewise_linear_pca
 from utils.label_broken_lines import label_broken_lines
 from utils.local_orientation_label_cost import local_orientation_label_cost
@@ -19,11 +20,11 @@ class MultiSkewExtractor(LineExtractorBase):
     def extract_lines(self, theta=0):
         max_orientation, _, max_response = MultiSkewExtractor.filter_document(self.image_to_process, self.char_range,
                                                                               theta)
-        print("max_response:{}".format(max_response[99:120,99:120]))
+        print("max_response:{}".format(max_response[99:120, 99:120]))
         labled_lines_original, _ = bwlabel(self.bin_image)
         _, old_lines = self.__niblack_pre_process(max_response, 2 * np.round(self.char_range[1]) + 1)
         labeled_lines, lebeled_lines_num, intact_lines_num = self.split_lines(old_lines, self.char_range[1])
-        print("labeled_lines:{}\n".format(labeled_lines[150:200,150:200]))
+        print("labeled_lines:{}\n".format(labeled_lines[150:200, 150:200]))
         print("lebeled_lines_num:{}\n".format(lebeled_lines_num))
         self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
                                      max_orientation, max_response, theta)
@@ -43,32 +44,76 @@ class MultiSkewExtractor(LineExtractorBase):
 
     @staticmethod
     def split_lines(lines, max_scale):
+        cm = plt.get_cmap('gray')
+        kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
+
         labeled_lines, num_of_labeles = bwlabel(lines)
         fitting = approximate_using_piecewise_linear_pca(labeled_lines, num_of_labeles, [], 0)
         indices = (fitting < 0.8 * max_scale) | (fitting == np.inf)
-        line_indices = np.argwhere(indices)[:,0] + [1]
-        non_line_indices = np.argwhere(np.logical_not(indices))[:,0] + [1]
+        line_indices = np.argwhere(indices)[:, 0] + [1]
+        non_line_indices = np.argwhere(np.logical_not(indices))[:, 0] + [1]
         intact_lines, intact_lines_num = bwlabel(np.isin(labeled_lines, line_indices))
         lines2split = np.isin(labeled_lines, non_line_indices)
         labeled_lines_num = intact_lines_num
         skel = skeletonize(lines2split)
+
+        intact_lines, intact_lines_num = bwlabel(np.isin(labeled_lines, line_indices))
+        lines2split = np.isin(labeled_lines, non_line_indices)
+
+        plt.imshow(1 * lines2split, **kw)
+        plt.show()
+
+        plt.imshow(1 * lines2split, **kw)
+        plt.show()
+
         branch_pts = find_branch_pts(skel_img=skel)
         # TODO check correct kernel and iterations
         branch_pts_fat = dilate(branch_pts, ksize=5, i=1)
+
+        # TODO intact not the same because of the spline fitting
+        plt.imshow(intact_lines, **kw)
+        plt.show()
+
         broken_lines = np.logical_and(skel, np.logical_not(branch_pts_fat))
-        lines2split = 1*lines2split
-        temp, labeled_lines_num = label_broken_lines(1*lines2split, 1*broken_lines, labeled_lines_num)
+
+        plt.imshow(branch_pts_fat, **kw)
+        plt.show()
+
+        lines2split = 1 * lines2split
+        temp, labeled_lines_num = label_broken_lines(1 * lines2split, 1 * broken_lines, labeled_lines_num)
         intact_lines[temp > 0] = temp[temp > 0]
         labeled_lines = intact_lines
-        for i in range(1, labeled_lines_num + 1):
-            lbls, num = bwlabel(labeled_lines == i)
+
+        r = label2rgb(temp, bg_color=(0, 0, 0))
+        cv2.imshow('image', r)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        plt.imshow(intact_lines, **kw)
+        plt.show()
+
+        connectivity_struct = np.array([[1, 1, 1],
+                                        [1, 1, 1],
+                                        [1, 1, 1]])
+
+        for i in range(1, int(labeled_lines_num) + 1):
+            lbls, num = bwlabel(labeled_lines == i, connectivity_struct)
             if num > 1:
                 props = regionprops(lbls)
                 areas = [p.area for p in props]
                 loc = np.argmax(areas)
+                print(areas)
                 lbls[lbls == loc + 1] = 0
                 labeled_lines[lbls > 0] = 0
-        return labeled_lines, labeled_lines_num, labeled_lines_num
+
+        r = label2rgb(labeled_lines, bg_color=(0, 0, 0))
+        cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('image', 600, 600)
+        cv2.imshow('image', r)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        return labeled_lines, labeled_lines_num, intact_lines_num
 
     @staticmethod
     def compute_line_label_cost(raw_labeled_lines, labeled_lines, labeled_lines_num, intact_lines_num, max_orientation,

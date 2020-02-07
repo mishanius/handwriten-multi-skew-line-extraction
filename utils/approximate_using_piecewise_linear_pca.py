@@ -31,7 +31,6 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
         y_rotated = rotated_pixels[1, :]
         zipped = sorted(zip(x_rotated, y_rotated))
         sorted_x, sorted_y = list(zip(*zipped))
-        print(len(sorted_x))
         try:
             slm = find_spline_with_numberofknots(sorted_x, sorted_y, 20, threshold=3)
         except Exception as e:
@@ -53,7 +52,7 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
     return fitting
 
 
-def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, threshold=0, max_iterations=100):
+def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, threshold=0, max_iterations=10):
     max = 1000
     min = 0
     iteration = 0
@@ -80,6 +79,7 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
             factor = factor - (factor - min) / 2
         iteration += 1
         if iteration>max_iterations:
+            print("cant find normal spline current number of knots:{}".format(number_of_knots))
             if desired_number_of_knots < number_of_knots:
                 raise RuntimeError("cant find normal spline")
             else:
