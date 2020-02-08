@@ -43,11 +43,11 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
 
 def estimate_local_orientations(max_orientation, max_response, theta, mask):
     res = np.zeros((len(theta), 2))
-    flat_img = max_orientation.flatten()
-    flat_mask = mask.flatten()
-    flat_response = max_response.flatten()
+    flat_img = np.transpose(max_orientation).flatten()
+    flat_mask = np.transpose(mask).flatten()
+    flat_response = np.transpose(max_response).flatten()
     for i in range(len(flat_img)):
-        if flat_mask[i] and flat_img[i]:
+        if flat_mask[i]:
             loc = int(flat_img[i])
             res[loc, 0] = theta[loc]
             res[loc, 1] = res[loc, 1] + flat_response[i]

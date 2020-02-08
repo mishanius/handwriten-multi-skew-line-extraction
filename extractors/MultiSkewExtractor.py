@@ -5,29 +5,43 @@ from skimage.filters import apply_hysteresis_threshold
 from skimage.filters.thresholding import _mean_std
 from skimage.measure import regionprops
 from skimage.morphology import reconstruction
+from RefineBinnaryOverlappingComponents import RefineBinnaryOverlappingComponents
+from LineExtraction_GC_MRFminimization import line_extraction_GC
+from computeLinesDC import compute_lines_data_cost
+from computeNsSystem import computeNsSystem
 from extractors.LineExtractorBase import LineExtractorBase
 from scipy.ndimage import label as bwlabel
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.approximate_using_piecewise_linear_pca import approximate_using_piecewise_linear_pca
+from utils.draw_labels import draw_labels
 from utils.label_broken_lines import label_broken_lines
 from utils.local_orientation_label_cost import local_orientation_label_cost
+
 
 
 class MultiSkewExtractor(LineExtractorBase):
 
     def extract_lines(self, theta=0):
+        cm = plt.get_cmap('gray')
+        kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
+
         max_orientation, _, max_response = MultiSkewExtractor.filter_document(self.image_to_process, self.char_range,
                                                                               theta)
         print("max_response:{}".format(max_response[99:120, 99:120]))
-        labled_lines_original, _ = bwlabel(self.bin_image)
+        labled_lines_original, num = bwlabel(self.bin_image)
         _, old_lines = self.__niblack_pre_process(max_response, 2 * np.round(self.char_range[1]) + 1)
         labeled_lines, lebeled_lines_num, intact_lines_num = self.split_lines(old_lines, self.char_range[1])
         print("labeled_lines:{}\n".format(labeled_lines[150:200, 150:200]))
         print("lebeled_lines_num:{}\n".format(lebeled_lines_num))
-        self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
+        cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
                                      max_orientation, max_response, theta)
+        print("finished cost !!")
+        new_lines = self.post_process_by_mfr(labled_lines_original,num, labeled_lines, lebeled_lines_num, cost, self.char_range)
+        plt.imshow(new_lines, **kw)
+        plt.title('original new lines!!!')
+        plt.show()
 
     def __niblack_pre_process(self, max_response, n):
         im = np.double(max_response)
@@ -40,6 +54,18 @@ class MultiSkewExtractor(LineExtractorBase):
         lines = reconstruction(np.logical_and(self.bin_image, lines), lines, method='dilation')
         labled_lines, _ = bwlabel(lines)
         r = label2rgb(labled_lines, bg_color=(0, 0, 0))
+        return [thresh_niblack2, lines]
+
+    @staticmethod
+    def niblack_pre_process(max_response, n, bin):
+        im = np.double(max_response)
+        # int(16.8) * 2 + 1
+        m, s = _mean_std(im, 47)
+        high = 22
+        low = 8
+        thresh_niblack2 = np.divide((im - m), s) * 20
+        lines = apply_hysteresis_threshold(thresh_niblack2, low, high)
+        lines = reconstruction(np.logical_and(bin, lines), lines, method='dilation')
         return [thresh_niblack2, lines]
 
     @staticmethod
@@ -117,7 +143,7 @@ class MultiSkewExtractor(LineExtractorBase):
 
     @staticmethod
     def compute_line_label_cost(raw_labeled_lines, labeled_lines, labeled_lines_num, intact_lines_num, max_orientation,
-                                max_response, theta):
+                                max_response, theta, radius_constant=18):
         acc = np.zeros((labeled_lines_num + 1, 1))
         mask_ = raw_labeled_lines.flatten()
         raw_labeled_lines_temp = labeled_lines.flatten()
@@ -125,11 +151,29 @@ class MultiSkewExtractor(LineExtractorBase):
             if label and masked_label:
                 acc[label - 1] = acc[label - 1] + 1
         density_label_cost = np.exp(0.2 * np.amax(acc) / acc)
-        density_label_cost[intact_lines_num + 1:] = [0]
+        density_label_cost[intact_lines_num:] = [0]
         if intact_lines_num != labeled_lines_num:
             orientation_label_cost = local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_num,
                                                                   max_orientation, max_response,
-                                                                  theta)
+                                                                  theta, radius_constant)
         else:
             orientation_label_cost = np.zeros(labeled_lines_num + 1, 1)
         return orientation_label_cost + density_label_cost
+
+    @staticmethod
+    def post_process_by_mfr(labeled_raw_components, raw_components_num, labeled_lines, labeled_lines_num, cost, char_range):
+        cc_sparse_ns = computeNsSystem(labeled_raw_components, raw_components_num)
+        data_cost = compute_lines_data_cost(labeled_lines, labeled_lines_num, labeled_raw_components,
+                                            raw_components_num,
+                                            char_range[1])
+        labels = line_extraction_GC(raw_components_num, labeled_lines_num, data_cost, cc_sparse_ns, cost)
+
+        labels[labels == labeled_lines_num + 1] = 0
+        residual_lines = np.isin(labeled_lines, labels)
+        labeled_lines[np.logical_not(residual_lines)] = 0
+        result = draw_labels(labeled_raw_components, labels)
+        refined_ccs = RefineBinnaryOverlappingComponents(labeled_raw_components, raw_components_num, labeled_lines, labeled_lines_num)
+        temp_mask = refined_ccs > 0
+        result[temp_mask] = refined_ccs[temp_mask]
+
+        return [result, labels, labeled_lines]

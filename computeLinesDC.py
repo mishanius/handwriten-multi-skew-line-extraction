@@ -27,7 +27,7 @@ def computeLinesDC(Lines, numLines, L, num, upperHeight):
 def compute_lines_data_cost(line_mask_lables, num_labeled_lines, raw_components, num, upper_height):
     raw_components_centroids = [[prop.centroid[0], prop.centroid[1]] for prop in regionprops(raw_components)]
     line_mask_lables = line_mask_lables.astype(np.int)
-    data_cost = np.zeros((num_labeled_lines, num))
+    data_cost = np.zeros((num_labeled_lines+1, num))
     for index, temp in enumerate(regionprops(line_mask_lables)):
         pixel_list = temp.coords
         if len(pixel_list) == 0:
@@ -35,5 +35,5 @@ def compute_lines_data_cost(line_mask_lables, num_labeled_lines, raw_components,
         else:
             nbrs = NearestNeighbors(1).fit(pixel_list)
             data_cost[index] = nbrs.kneighbors(raw_components_centroids)[0].transpose()
-    # data_cost[num_labeled_lines] = 5 * upper_height
+    data_cost[num_labeled_lines] = 5 * upper_height
     return data_cost.transpose()

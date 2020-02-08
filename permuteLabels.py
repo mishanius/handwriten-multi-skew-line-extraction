@@ -1,16 +1,14 @@
 import numpy as np
 
 
-def permuteLabels(Lines):
-    Lines = Lines.astype(np.uint16)
-    uniqueLabels = np.unique(np.array(Lines))
-    np.delete(uniqueLabels, 0)
-    p = np.random.permutation(len(uniqueLabels))
+def permuteLabels(lines):
+    lines = lines.astype(np.uint16)
+    unique_labels = np.delete(np.unique(np.array(lines)), 0)
+    p = np.random.permutation(range(1, len(unique_labels) + 1))
     LUT = np.zeros((65536), dtype=np.uint16)
-    newLinesNum = len(uniqueLabels)
 
-    for i in range(newLinesNum):
-        LUT[uniqueLabels[i]] = p[i]
+    for i in range(len(unique_labels)):
+        LUT[unique_labels[i]] = p[i]
 
-    newLines = np.array(LUT[Lines], dtype=np.double)
-    return [newLines, newLinesNum]
+    new_lines = np.array(LUT[lines], dtype=np.double)
+    return [new_lines, len(unique_labels)]

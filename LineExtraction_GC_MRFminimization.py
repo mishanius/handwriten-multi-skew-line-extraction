@@ -48,8 +48,8 @@ def line_extraction_GC(num_connected_componants, num_of_lines, data_cost, cc_spa
                 if edgeWeights[row_index, col_index] != 0 and 0 < row_index < col_index < num_connected_componants:
                     sparse.append(((row_index, col_index), np.int32(edgeWeights[row_index, col_index])))
 
-        smooth_cost = np.int32((np.ones(num_of_lines) - np.eye(num_of_lines)))
-        gc.set_smooth_cost(smooth_cost)
+    smooth_cost = np.int32((np.ones(num_of_lines+1) - np.eye(num_of_lines+1)))
+    gc.set_smooth_cost(smooth_cost)
 
     if label_cost is not None:
         threshHold = 10
@@ -62,10 +62,14 @@ def line_extraction_GC(num_connected_componants, num_of_lines, data_cost, cc_spa
     for currEdge in sparse:
         gc.set_neighbor_pair(currEdge[0][0], currEdge[0][1], currEdge[1])
 
-    gc.expansion()
-    result_labels = gc.get_labels() + 1
-    gc.destroy_graph()
-    return result_labels
+    try:
+        gc.expansion()
+        result_labels = gc.get_labels() + 1
+        return result_labels
+    except Exception as e:
+        print("gco faild")
+    finally:
+        gc.destroy_graph()
 
 
 def computeEdgeWeights(W):

@@ -52,7 +52,7 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
     return fitting
 
 
-def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, threshold=0, max_iterations=10):
+def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, threshold=0, max_iterations=100):
     max = 1000
     min = 0
     iteration = 0
