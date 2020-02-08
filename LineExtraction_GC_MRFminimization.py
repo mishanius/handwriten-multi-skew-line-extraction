@@ -48,7 +48,7 @@ def line_extraction_GC(num_connected_componants, num_of_lines, data_cost, cc_spa
                 if edgeWeights[row_index, col_index] != 0 and 0 < row_index < col_index < num_connected_componants:
                     sparse.append(((row_index, col_index), np.int32(edgeWeights[row_index, col_index])))
 
-    smooth_cost = np.int32((np.ones(num_of_lines+1) - np.eye(num_of_lines+1)))
+    smooth_cost = np.int32((np.ones(num_of_lines) - np.eye(num_of_lines)))
     gc.set_smooth_cost(smooth_cost)
 
     if label_cost is not None:
