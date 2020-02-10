@@ -4,6 +4,7 @@ from computeNsSystem import computeNsSystem
 from computeLinesDC import computeLinesDC, compute_lines_data_cost
 from computeLinesLabelCost import computeLineLabelCost
 import numpy as np
+import scipy.io
 from RefineBinnaryOverlappingComponents import RefineBinnaryOverlappingComponents
 from LineExtraction_GC_MRFminimization import LineExtraction_GC_MRFminimization, line_extraction_GC
 

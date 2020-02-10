@@ -7,6 +7,7 @@ import ctypes as ct
 # or change this to your own path that contains libcgco.so
 _CGCO_LIB_PATH = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 LIB_NAME = 'libcgco'
+print("******************_CGCO_LIB_PATH " + _CGCO_LIB_PATH)
 LIST_LIBGCO = glob.glob(os.path.join(_CGCO_LIB_PATH, LIB_NAME + '.*'))
 assert len(LIST_LIBGCO) > 0, 'nothing found: %s' % repr(LIST_LIBGCO)
 lib_exts = [os.path.splitext(os.path.basename(p))[1] for p in LIST_LIBGCO]
@@ -41,8 +42,7 @@ _SMOOTH_COST_FN = ct.CFUNCTYPE(_energy_term_type, ct.c_int, ct.c_int,
                                _label_id_type, _label_id_type)
 
 # load cgco shared library
-# _cgco = np.ctypeslib.load_library(_CGCO_LIB_NAME, _CGCO_LIB_PATH)
-_cgco = np.ctypeslib.load_library("libcgco.dll", _CGCO_LIB_PATH)
+_cgco = np.ctypeslib.load_library(_CGCO_LIB_NAME, _CGCO_LIB_PATH)
 
 # declare the functions, argument types and return types
 _cgco.gcoCreateGeneralGraph.argtypes = [_site_id_type, _label_id_type,
@@ -111,3 +111,6 @@ _cgco.gcoGetLabels.restype = ct.c_int
 
 _cgco.gcoInitLabelAtSite.argtypes = [_handle_type, _site_id_type, _label_id_type]
 _cgco.gcoInitLabelAtSite.restypes = ct.c_int
+_cgco.solveFromcsv.argtypes = [_site_id_type, _label_id_type,
+                                        ct.c_int]
+_cgco.solveFromcsv.restypes = ct.c_int

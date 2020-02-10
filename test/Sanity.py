@@ -51,16 +51,24 @@ class SanityTestCase(Sanity):
         res = drawLabels(labeled_raw_lines, labels)
         print(res)
 
-    def test_energy_min(self):
+    def test_keeps_failing(self):
+        data_cost = np.load('../numpy_data/data_cost.npy')
+        label_cost = np.load('../numpy_data/label_cost.npy')
+        smooth_cost = np.load('../numpy_data/smooth_cost.npy')
         gc = gco.GCO()
-        big_num = 79 +1
-        small_num = 29
-        gc.create_general_graph(small_num, big_num, False)
-        gc.set_data_cost(np.array([np.ones((big_num,), dtype=np.int32) for di in range(small_num)]))
-        gc.set_label_cost(np.array([1 for lb in range(big_num)]))
-        smooth_cost = np.int32((np.ones(big_num) - np.eye(big_num)))
-        gc.set_smooth_cost(smooth_cost)
+        gc.create_general_graph(245, 11)
+        gc.set_data_cost(np.array(np.int32(np.around(data_cost)).copy()))
+        # label_cost[label_cost>10000]=10
+        label_cost=label_cost[2:]
+        gc.set_label_cost(np.int32(np.around(label_cost.copy())))
+        gc.set_smooth_cost(smooth_cost.copy())
+        gc.set_neighbor_pair(1, 2, 1.0)
+        # gc.set_all_neighbors(np.array([1]),np.array([2]), np.array([5]))
+
         gc.expansion()
+        labels = gc.get_labels()
+        print(labels)
+
 
     def test_lines_data_cost(self):
         labeled_raw_lines, number_of_raw_lines = bwlabel(self.binarized_line_image)
@@ -83,6 +91,7 @@ class SanityTestCase(Sanity):
         gc.set_data_cost(np.array([di for di in data_cost.transpose()]))
         gc.expansion()
         labels = gc.get_labels()
+        gc.destroy_graph()
         print(labels)
         assert np.array_equal(labels, np.array([0, 0, 0, 1]))
 
@@ -119,6 +128,7 @@ class LabelCostTest(Sanity):
         gc.set_data_cost(np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]))
         # gc.set_smooth_cost(np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]))
         gc.set_label_cost(np.array([100, 100, 50]))
+        gc.set_neighbor_pair(1,2,999)
 
         gc.expansion()
         labels = gc.get_labels()

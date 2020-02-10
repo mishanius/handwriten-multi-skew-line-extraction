@@ -1,5 +1,6 @@
 import numpy as np
 import ctypes as ct
+
 try:
     from cgco import _cgco, _SMOOTH_COST_FN
 except Exception:
@@ -14,7 +15,7 @@ _PAIRWISE_FLOAT_PRECISION = 1000
 _SMOOTH_COST_PRECISION = 100
 
 _int_types = [np.int, np.intc, np.int32, np.int64, np.longlong]
-_float_types = [np.float, np.float32, np.float64]
+_float_types = [np.float, np.float32, np.float64, np.float128]
 
 _SMALL_CONSTANT = 1e-10
 
@@ -66,6 +67,10 @@ class GCO(object):
         self.energy_is_float = energy_is_float
         self.smooth_cost_fun = None
 
+    def solve_from_csv(self, num_sites, num_labels, num_of_neighbors_pairs):
+        _cgco.solveFromcsv(np.intc(num_sites), np.intc(num_labels),
+                           np.intc(num_of_neighbors_pairs))
+
     def destroy_graph(self):
         _cgco.gcoDestroyGraph(self.handle)
 
@@ -114,19 +119,16 @@ class GCO(object):
     def set_data_cost(self, unary):
         """Set unary potentials, unary should be a matrix of size
         nb_sites x nb_labels. unary can be either integers or float"""
-
-        if (self.nb_sites, self.nb_labels) != unary.shape:
-            raise ShapeMismatchError(
-                "Shape of unary potentials does not match the graph.")
+        # if (self.nb_sites, self.nb_labels) != unary.shape:
+        #     raise ShapeMismatchError(
+        #         "Shape of unary potentials does not match the graph.")
 
         # Just a reference
         self._unary = self._convert_unary_array(unary)
         _cgco.gcoSetDataCost(self.handle, self._unary)
 
-
     def set_label_cost(self, unary):
-
-        self._unary = self._convert_unary_array(unary)
+        self._unary = self._convert_unary_term(unary)
         _cgco.gcoSetLabelCost(self.handle, self._unary)
 
     def set_site_data_cost(self, site, label, e):
@@ -195,6 +197,7 @@ class GCO(object):
         """Pass a function to calculate the smooth cost for sites s1 and s2 labeled l1 and l2.
             Function is of from fun (s1, s1, l1, l2) -> cost
         """
+
         def _typesafe(s1, s2, l1, l2):
             return self._convert_smooth_cost_term(fun(s1, s2, l1, l2))
 
@@ -313,8 +316,8 @@ def cut_general_graph(edges, edge_weights, unary_cost, pairwise_cost=None,
     array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1], dtype=int32)
     """
     energy_is_float = (unary_cost.dtype in _float_types) or \
-        (edge_weights.dtype in _float_types) or \
-        (pairwise_cost.dtype in _float_types)
+                      (edge_weights.dtype in _float_types) or \
+                      (pairwise_cost.dtype in _float_types)
 
     if not energy_is_float and not (
             (unary_cost.dtype in _int_types) and
@@ -455,8 +458,8 @@ def cut_grid_graph(unary_cost, pairwise_cost, cost_v, cost_h, cost_dr=None,
                       (cost_h.dtype in _float_types)
 
     if not energy_is_float and not (
-        (unary_cost.dtype in _int_types) and
-        (pairwise_cost.dtype in _int_types) and
+            (unary_cost.dtype in _int_types) and
+            (pairwise_cost.dtype in _int_types) and
             (cost_v.dtype in _int_types) and
             (cost_h.dtype in _int_types)):
         raise DataTypeNotSupportedError(

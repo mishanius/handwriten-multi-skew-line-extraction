@@ -2,7 +2,7 @@ import numpy as np
 
 
 def computeLineLabelCost(L, Lines, numLines):
-    acc = np.zeros(numLines + 1)
+    acc = np.zeros(numLines + 2)
     mask_ = L.flatten()
     L_ = Lines.flatten()
 
@@ -13,5 +13,5 @@ def computeLineLabelCost(L, Lines, numLines):
     acc[acc < 1] = 1
 
     LabelCost = np.exp(0.2 * max(acc) / acc)
-
+    LabelCost[numLines] = 0
     return LabelCost

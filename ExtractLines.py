@@ -15,25 +15,15 @@ bin = cv2.bitwise_not(I)
 charRange = estimateBinaryHeight(bin)
 
 
-LineMask = LineExtraction(I, charRange)
-# LineMask2 = LineMask.astype(int)
-# LineMask2[LineMask==False] = 0
-# LineMask2[LineMask==True] = 255
-# new_image = LineMask2.astype(np.uint8)
-# # new_image_red, new_image_green, new_image_blue = new_image
-# # new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
-# cv2.imshow("WindowNameHere", new_image)
-# cv2.waitKey(0)
-# # t = LineMaskInv.astype(np.int8) * 100
-# cv2.imwrite('image.png', new_image)
+# LineMask = LineExtraction(I, charRange)
 # pt.imsave("images/mask.png",LineMask)
-# LineMask =pt.imread("images/mask.png",0)
-LineMask = cv2.imread('images/image_mask.png', 0)
-LineMask = cv2.bitwise_not(LineMask)
-# pt.imshow(LineMask)
-# pt.show()
+# LineMask = np.logical_not(LineMask)
+# np.save("numpy_data/LineMask",LineMask)
+LineMask = np.load('numpy_data/LineMask.npy')
+# LineMask = np.logical_not(LineMask)
+# LineMask = cv2.imread("images/mask.png", 0)
+# LineMask = cv2.bitwise_not(LineMask)
 L, num = bwlabel(bin)
-# [result, Labels, newLines] = PostProcessByMRF(L, num, LineMask, charRange)
 [result, Labels, newLines] =post_process_by_mfr(L, num, LineMask, charRange)
 
 
