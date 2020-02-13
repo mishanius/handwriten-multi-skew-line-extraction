@@ -38,8 +38,8 @@ def LineExtraction_GC_MRFminimization(numLines, num, CCsparseNs, Dc, LabelCost):
 
 def line_extraction_GC(num_connected_componants, num_of_lines, data_cost, cc_sparse_ns=None, label_cost=None):
     gc = gco.GCO()
-    gc.create_general_graph(num_connected_componants, num_of_lines, False)
-    gc.set_data_cost(np.array([di for di in data_cost]))
+    gc.create_general_graph(num_connected_componants, num_of_lines+1, False)
+
     sparse = []
     if cc_sparse_ns is not None:
         edgeWeights = computeEdgeWeights(cc_sparse_ns)
@@ -50,14 +50,15 @@ def line_extraction_GC(num_connected_componants, num_of_lines, data_cost, cc_spa
 
     smooth_cost = np.int32((np.ones(num_of_lines+1) - np.eye(num_of_lines+1)))
     gc.set_smooth_cost(smooth_cost)
-
+    threshHold = 1000000
+    data_cost[data_cost > threshHold] = threshHold - 1
+    gc.set_data_cost(np.array([di for di in data_cost]))
     if label_cost is not None:
-        threshHold = 10
-        data_cost[data_cost > threshHold] = threshHold - 1
+
         label_cost[label_cost > threshHold] = threshHold - 1
         label_cost = np.array(np.round(label_cost), dtype=np.int32)
 
-        gc.set_label_cost(label_cost)
+        gc.set_label_cost(label_cost.flatten())
 
     for currEdge in sparse:
         gc.set_neighbor_pair(currEdge[0][0], currEdge[0][1], currEdge[1])

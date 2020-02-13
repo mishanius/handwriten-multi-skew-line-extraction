@@ -38,7 +38,7 @@ class MultiSkewExtractor(LineExtractorBase):
         cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
                                      max_orientation, max_response, theta)
         print("finished cost !!")
-        new_lines = self.post_process_by_mfr(labled_lines_original,num, labeled_lines, lebeled_lines_num, cost, self.char_range)
+        _,_ ,new_lines = self.post_process_by_mfr(labled_lines_original,num, labeled_lines, lebeled_lines_num, cost, self.char_range)
         plt.imshow(new_lines, **kw)
         plt.title('original new lines!!!')
         plt.show()
