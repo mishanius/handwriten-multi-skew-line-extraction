@@ -1,5 +1,8 @@
 import math
-
+from plantcv.plantcv import dilate
+import numpy as np
+import matplotlib.pyplot as plt
+import pwlf
 from scipy.interpolate import UnivariateSpline
 from skimage.measure import regionprops
 import numpy as np
@@ -32,14 +35,14 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
         zipped = sorted(zip(x_rotated, y_rotated))
         sorted_x, sorted_y = list(zip(*zipped))
         try:
-            slm = find_spline_with_numberofknots(sorted_x, sorted_y, 20, threshold=3)
+            slm, knots = alternativespline_fitting(sorted_x, sorted_y, 20)
+            # slm = find_spline_with_numberofknots(sorted_x, sorted_y, 20, threshold=3)
         except Exception as e:
             fitting[i, :] = [0]
             continue
         # slm = UnivariateSpline(sorted_x, sorted_y, len(sorted_x) * 100, k=1)
-        knots = slm.get_knots()
         print("knots:{}".format(len(knots)))
-        coeffs = slm.get_coeffs()
+        coeffs = slm.predict(knots)
         for index in range(len(knots) - 1):
             x_end_point = knots[index:index + 2]
             y_end_point = coeffs[index:index + 2]
@@ -51,6 +54,23 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
             fitting[i] = max(fitting[i], LA.norm(y_hat - y_, 1) / len(x_))
     return fitting
 
+def alternativespline_fitting(xdata, y, number_of_knots):
+    # initialize piecewise linear fit with your x and y data
+    my_pwlf = pwlf.PiecewiseLinFit(xdata, y)
+
+    # fit the data for four line segments
+    res = my_pwlf.fit(3)
+
+    # predict for the determined points
+    xHat = np.linspace(min(xdata), max(xdata), num=10000)
+    yHat = my_pwlf.predict(xHat)
+    print("knots:{}, ys:{}".format(res, my_pwlf.predict(res)))
+    # plot the results
+    plt.figure()
+    plt.plot(xdata, y, 'o')
+    plt.plot(xHat, yHat, '-')
+    plt.show()
+    return my_pwlf, res
 
 def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, threshold=0, max_iterations=100):
     max = 1000

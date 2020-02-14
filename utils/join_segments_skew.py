@@ -10,46 +10,50 @@ from sklearn.neighbors import NearestNeighbors
 import numpy.matlib
 from scipy.sparse import csr_matrix
 from scipy import ndimage
+import matplotlib.pyplot as plt
 
 from permuteLabels import permuteLabels
 from utils.approximate_using_piecewise_linear_pca import find_spline_with_numberofknots, \
-    approximate_using_piecewise_linear_pca
+    approximate_using_piecewise_linear_pca, alternativespline_fitting
 from scipy.sparse.csgraph import connected_components
 from numpy import linalg as LA
 from scipy.sparse.csgraph import minimum_spanning_tree
 from plantcv.plantcv.morphology import skeletonize, find_branch_pts
 
 MATLAB_ROOT = "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2"
+end_points = None
+cm = plt.get_cmap('gray')
+kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
+
 
 def join_segments_skew(L, newLines, newLinesNum, max_scale):
-
     num_of_knots = 20
     pca = PCA()
     # TODO deside if need transpose
     temp = regionprops(newLines)
     numOfKnots = 20
-    end_points = np.zeros((newLinesNum, 8))
-    for i in range(newLinesNum):
-        try:
-            pixel_list = temp[i].coords
-            pca_res = pca.fit(pixel_list)
-            pcav = pca_res.components_[0]
-            theta = math.atan(pcav[1] / pcav[0])
-            transformation = np.array([[math.cos(-theta), -math.sin(-theta)], [math.sin(-theta), math.cos(-theta)]])
-            rotated_pixels = np.matmul(transformation, np.transpose(pixel_list))
-        except Exception as e:
-            continue
-
-        x_rotated = rotated_pixels[0, :]
-        y_rotated = rotated_pixels[1, :]
-        # here is the slm-----------
-        #     print(np.concatenate((np.transpose(x_endP),np.transpose(y_endP)),0))
-        # here is the slm-----------
-        x_endP = slm_knots[[3, 0, numOfKnots - 4, numOfKnots - 1]]
-        y_endP = slm_coef[[3, 0, numOfKnots - 4, numOfKnots - 1]]
-        r_inv = np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
-        temp = np.matmul(r_inv, np.concatenate((np.transpose(x_endP), np.transpose(y_endP)), 0))
-        end_points[i, :] = temp.flatten('F')
+    # end_points = np.zeros((newLinesNum, 8))
+    # for i in range(newLinesNum):
+    #     try:
+    #         pixel_list = temp[i].coords
+    #         pca_res = pca.fit(pixel_list)
+    #         pcav = pca_res.components_[0]
+    #         theta = math.atan(pcav[1] / pcav[0])
+    #         transformation = np.array([[math.cos(-theta), -math.sin(-theta)], [math.sin(-theta), math.cos(-theta)]])
+    #         rotated_pixels = np.matmul(transformation, np.transpose(pixel_list))
+    #     except Exception as e:
+    #         continue
+    #
+    #     x_rotated = rotated_pixels[0, :]
+    #     y_rotated = rotated_pixels[1, :]
+    #     # here is the slm-----------
+    #     #     print(np.concatenate((np.transpose(x_endP),np.transpose(y_endP)),0))
+    #     # here is the slm-----------
+    #     x_endP = slm_knots[[3, 0, numOfKnots - 4, numOfKnots - 1]]
+    #     y_endP = slm_coef[[3, 0, numOfKnots - 4, numOfKnots - 1]]
+    #     r_inv = np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
+    #     temp = np.matmul(r_inv, np.concatenate((np.transpose(x_endP), np.transpose(y_endP)), 0))
+    #     end_points[i, :] = temp.flatten('F')
 
     external_ep = np.zeros((2 * newLinesNum, 2))
     external_ep[0:newLinesNum, :] = end_points[:, 2:4]
@@ -122,7 +126,7 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
 
     DensityLabelCost = extractDensity(L, newLines, newLinesNum)
     DensityLabelCost[DensityLabelCost > 10000] = 10000
-
+    # tested
     n = 2 * newLinesNum
     E[cnt: cnt + n, 0] = n
     E[cnt: cnt + n, 1] = range(n)
@@ -152,19 +156,21 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
     v[non_zeros - 1] = A[non_zeros_x, non_zeros_y]
 
     Tcsr = minimum_spanning_tree(M)
-    wx, wy = Tcsr.nonzero()
-    newE = np.array([wx, wy])
-    rows = np.argwhere(newE == n)[:, 1]
+    wrow, wcol = Tcsr.nonzero()
+    newE = np.transpose(np.array([wrow, wcol]))
+    rows = np.argwhere(newE == n)[:, 0]
     mask = np.ones(newE.shape)
     mask[rows] = False
-    newE = newE[mask]
+    mask = mask.astype(np.bool)
+    newE = newE[mask.astype(np.bool)[:, 0]]
 
-    newA = np.asarray((np.ones((newE.shape[0], 1)), (newE[:, 0], newE[:, 1])), (n, n))
+    newA = csr_matrix((np.ones((newE.shape[0])), (newE[:, 0], newE[:, 1])), (n, n))
     newA = newA + np.transpose(newA)
     n_components, ci = connected_components(csgraph=newA, directed=False, return_labels=True)
-    new_labeling = ci[:newLinesNum]
-    LUT = np.zeros((1,65536), np.uint16)
-    LUT[1:len(new_labeling) + 1] = np.transpose(new_labeling)
+    new_labeling = ci[:newLinesNum] + 1
+    LUT = np.zeros((65536), np.uint16)
+    # tested
+    LUT[1:len(new_labeling) + 1] = new_labeling
     combinedLines = np.double(LUT[newLines])
     new_segments = np.zeros(newLines.shape)
     newSegmentsCnt = 1
@@ -175,13 +181,14 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
         if lhsIdx == rhsIdx:
             continue
         else:
-            [mask, LabelNum] = join_segments_helper(L, newLines, combinedLines, [lhsIdx, rhsIdx], max_scale, temp)
+            lhs_rhs_idxs = [lhsIdx, rhsIdx]
+            [mask, LabelNum] = join_segments_helper(L, newLines, combinedLines, lhs_rhs_idxs, max_scale, temp)
             if LabelNum:
                 new_segments[mask] = newSegmentsCnt
                 combinedLines[mask] = LabelNum
                 newSegmentsCnt = newSegmentsCnt + 1
 
-    cnt = max(np.amax(combinedLines))
+    cnt = int(max(np.amax(combinedLines),0))
     for i in range(cnt):
         [L, num] = bwlabel(combinedLines == i)
         if (num > 1):
@@ -189,11 +196,10 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
                 combinedLines[L == j] = cnt + 1
             cnt = cnt + 1
 
-    combinedLines,_ = permuteLabels(combinedLines)
+    combinedLines, _ = permuteLabels(combinedLines)
 
 
 def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixelList):
-
     mask = Lines
     length = len(segments2Join)
     LabelNum = False
@@ -202,55 +208,77 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
     maxX = 0
     maxY = 0
     for i in range(len(segments2Join)):
-        X = pixelList[segments2Join[i]].coords
-        minX = min(np.amax(X[:, 0]), minX)
-        minY = min(np.amax(X[:, 1]), minY)
-        maxX = max(np.amax(X[:, 0]), maxX)
-        maxY = max(np.amax(X[:, 1]), maxY)
+        X = pixelList[segments2Join[i] - 1].coords
+        minX = min(np.amin(X[:, 1]), minX)
+        minY = min(np.amin(X[:, 0]), minY)
+        maxX = max(np.amax(X[:, 1]), maxX)
+        maxY = max(np.amax(X[:, 0]), maxY)
 
-    CroppedLines = Lines[minY:maxY, minX: maxX]
+    CroppedLines = Lines[minY:maxY + 1, minX: maxX + 1]
 
     for i in range(length - 1):
         bw1 = CroppedLines == segments2Join[i]
         bw2 = CroppedLines == segments2Join[i + 1]
-        #TODO talk to baret, no quasi-euclidean transformation avaliable https://www.mathworks.com/help/images/ref/bwdist.html
-        D1 = ndimage.distance_transform_edt(bw1==0)
-        D2 = ndimage.distance_transform_edt(bw2==0)
+        # TODO talk to baret, no quasi-euclidean transformation avaliable https://www.mathworks.com/help/images/ref/bwdist.html
+        D1 = ndimage.distance_transform_edt(bw1 == 0)
+        D2 = ndimage.distance_transform_edt(bw2 == 0)
         D = np.round((D1 + D2) * 32) / 32
-
-
-        lm = ndimage.minimum_filter(D, np.ones((3,3)))
-        paths = (D == lm)
-        #TODO understand the np.inf | paths = bwmorph(paths, 'skel', np.inf)
+        paths = matlabic_minima(D)
+        # TODO understand the np.inf | paths = bwmorph(paths, 'skel', np.inf)
         paths = skeletonize(paths)
 
         tempMask = dilate(paths, ksize=10, i=1)
 
         mask = np.full(L.shape, False)
 
-        mask[minY: maxY, minX: maxX] = tempMask
+        # plt.imshow(paths, **kw)
+        # plt.show()
+
+        # plt.imshow(tempMask, **kw)
+        # plt.show()
+        mask[minY: maxY+1, minX: maxX+1] = tempMask
         AdjacentIndices = np.unique(combinedLines[mask])
 
-        rows_to_remove = np.argwhere[AdjacentIndices == 0]
-        mask = np.ones(AdjacentIndices.shape)
-        mask[rows_to_remove] = False
-        AdjacentIndices = rows_to_remove[mask]
+        rows_to_remove = np.argwhere(AdjacentIndices == 0)
+        mask_for_removal = np.ones(AdjacentIndices.shape)
+        mask_for_removal[rows_to_remove] = False
+        AdjacentIndices = AdjacentIndices[mask_for_removal.astype(np.bool)]
 
-        if (len(AdjacentIndices) > 1) or (not np.any(np.logical_and(mask , L))):
+        if (len(AdjacentIndices) > 1) or (not np.any(np.logical_and(mask, L))):
             LabelNum = False
         else:
-            mask = np.logical_and(mask ,np.logical_not(combinedLines))
+            mask = np.logical_and(mask, np.logical_not(combinedLines))
             bw1 = Lines == segments2Join[i]
             bw2 = Lines == segments2Join[i + 1]
             # TODO previously no dialation
-            t = reconstruction(np.logical_or(bw1, bw2), np.logical_or(combinedLines == AdjacentIndices , mask), method='dilation')
-            fitting = approximate_using_piecewise_linear_pca(t, 1, 0, 0)
+            try:
+                t = reconstruction(np.logical_or(bw1, bw2), np.logical_or(combinedLines == AdjacentIndices, mask),
+                                   method='dilation')
+            except Exception as e:
+                t = reconstruction(np.logical_or(bw1, bw2), np.logical_or(combinedLines == AdjacentIndices, mask),
+                                   method='dilation')
+            fitting = approximate_using_piecewise_linear_pca(t.astype(np.int), 1, [], 0)
             if fitting[0] < 0.8 * max_scale:
                 LabelNum = AdjacentIndices
             else:
                 LabelNum = False
     return mask, LabelNum
 
+
+def matlabic_minima(D):
+    # TODO very expamsive
+    lm = ndimage.minimum_filter(D, footprint=np.ones((3, 3)))
+    paths = (D == lm)
+    labeld, _ = bwlabel(paths.astype(np.int32))
+    for prop in regionprops(labeld):
+        to_label = D[prop.coords[0][0], prop.coords[0][1]]
+        temp = D == to_label
+        labled_temp, _ = bwlabel(temp)
+        label_of_suspect = labled_temp[prop.coords[0][0], prop.coords[0][1]]
+        temp_props = regionprops(labled_temp)
+        if prop.area != temp_props[label_of_suspect-1].area:
+            paths[labeld == prop.label] = False
+    return paths
 
 
 def extractDensity(L, Lines, numLines):
@@ -266,31 +294,8 @@ def extractDensity(L, Lines, numLines):
     acc[acc < 6.5] = 6.5
     return acc
 
-def prepare_for_debug_join_segments_helper():
-    l = sio.loadmat("C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/L.mat")
-    L = l['L']
-    Lines = sio.loadmat(
-        "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/Lines.mat")
-    Lines = Lines['Lines']
-    combinedLines = sio.loadmat(
-        "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/combinedLines.mat")
-    combinedLines = combinedLines['combinedLines']
-    segments2Join = sio.loadmat(
-        "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/segments2Join.mat")
-    segments2Join = segments2Join['segments2Join'][0]
-    max_scale = sio.loadmat(
-        "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/max_scale.mat")
-    max_scale = max_scale['max_scale'][0][0]
-    new_lines = sio.loadmat(
-        "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/newLines.mat")
-    new_lines = new_lines['newLines']
-    new_lines = sio.loadmat(
-        "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2/newLines.mat")
-    new_lines = new_lines['newLines']
-    pixel_lists = regionprops(new_lines)
-    join_segments_helper(L, Lines, combinedLines, segments2Join-1, max_scale, pixel_lists)
 
-def prepare_for_debug_join_segments():
+def prepare_for_debug_join_segments_helper():
     l = sio.loadmat("{}/{}".format(MATLAB_ROOT, "L.mat"))
     L = l['L']
     Lines = sio.loadmat(
@@ -312,7 +317,8 @@ def prepare_for_debug_join_segments():
         "{}/{}".format(MATLAB_ROOT, "newLines.mat"))
     new_lines = new_lines['newLines']
     pixel_lists = regionprops(new_lines)
-    return [L, Lines, combinedLines, segments2Join, max_scale, pixel_lists]
+    join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixel_lists)
+
 
 def prepare_for_debug_join_segments():
     l = sio.loadmat("{}/{}".format(MATLAB_ROOT, "L.mat"))
@@ -325,16 +331,26 @@ def prepare_for_debug_join_segments():
     newLinesNum = newLinesNum['newLinesNum'][0][0]
     max_scale = sio.loadmat(
         "{}/{}".format(MATLAB_ROOT, "max_scale.mat"))
+    max_scale = max_scale['max_scale'][0][0]
+    # slm = sio.loadmat("{}/{}".format(MATLAB_ROOT, "slm.mat"))
+    # slm_knots = slm['knots']
+    # slm_coef = slm['coef']
+    join_segments_skew(L, new_lines, newLinesNum, max_scale)
+
+
+if __name__ == "__main__":
     end_points = sio.loadmat(
         "{}/{}".format(MATLAB_ROOT, "endPoints.mat"))
     end_points = end_points['endPoints']
-    max_scale = max_scale['max_scale'][0][0]
-    slm = sio.loadmat("{}/{}".format(MATLAB_ROOT, "slm.mat"))
-    slm_knots = slm['knots']
-    slm_coef = slm['coef']
-    join_segments_skew()
-
-if __name__ == "__main__":
-    prepare_for_debug_join_segments_helper()
-
-
+    prepare_for_debug_join_segments()
+    # prepare_for_debug_join_segments_helper()
+    # A = 10 * np.ones((10, 10))
+    # A[1, 1] = 3.1
+    # A[2, 1] = 3.1
+    # A[3, 1] = 3.1
+    # A[4, 1] = 2.2
+    # A[5:8, 5:8] = 8
+    # print("matlabic_minima:{}".format(matlabic_minima(A)))
+    # xdata = np.linspace(-2, 2, 50)
+    # y = np.power(xdata, 2)
+    # alternativespline_fitting(xdata, y, 3)
