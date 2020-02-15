@@ -69,17 +69,16 @@ def alternativespline_fitting(xdata, y, number_of_knots):
     res = my_pwlf.fit(number_of_knots)
 
     # predict for the determined points
-    xHat = np.linspace(min(xdata), max(xdata), num=10000)
-    yHat = my_pwlf.predict(xHat)
-    print("knots:{}, ys:{}".format(res, my_pwlf.predict(res)))
+    # xHat = np.linspace(min(xdata), max(xdata), num=10000)
+    # yHat = my_pwlf.predict(xHat)
     # plot the results
-    plt.figure()
-    plt.plot(xdata, y, 'o')
-    plt.plot(xHat, yHat, '-')
-    plt.show()
+    # plt.figure()
+    # plt.plot(xdata, y, 'o')
+    # plt.plot(xHat, yHat, '-')
+    # plt.show()
     return my_pwlf, res
 
-
+@timed
 def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, threshold=0, max_iterations=100):
     max_f = 1000
     min_f = 0
@@ -93,7 +92,7 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
         slm = UnivariateSpline(data_x, data_y, s=len(data_x) * max_f, k=1)
     factor = max_f
     while not (
-            abs(desired_number_of_knots - number_of_knots) <= threshold and number_of_knots <= desired_number_of_knots):
+            abs(desired_number_of_knots - slm.get_knots().size) <= threshold and slm.get_knots().size <= desired_number_of_knots):
         slm = UnivariateSpline(data_x, data_y, s=len(data_x) * factor, k=1)
         if slm.get_knots().size > desired_number_of_knots:
             min_f = factor
@@ -110,7 +109,7 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
             factor = factor - (factor - min_f) / 2
         iteration += 1
         if iteration > max_iterations:
-            print("cant find normal spline current number of knots:{} closeset:{}".format(number_of_knots,
+            print("cant find normal spline current number of knots:{} closeset:{}".format(slm.get_knots().size,
                                                                                           -1 if closesed is None else
                                                                                           closesed[1]))
             if closesed is None or closesed[1] > desired_number_of_knots:
@@ -118,11 +117,11 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
             else:
                 slm = closesed[0]
                 break
-    xHat = np.linspace(min(data_x), max(data_x), num=10000)
-    yHat = slm(xHat)
+    # xHat = np.linspace(min(data_x), max(data_x), num=10000)
+    # yHat = slm(xHat)
     # plot the results
-    plt.figure()
-    plt.plot(data_x, data_y, 'o')
-    plt.plot(xHat, yHat, '-')
-    plt.show()
+    # plt.figure()
+    # plt.plot(data_x, data_y, 'o')
+    # plt.plot(xHat, yHat, '-')
+    # plt.show()
     return slm

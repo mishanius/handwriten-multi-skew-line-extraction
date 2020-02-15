@@ -5,6 +5,8 @@ from plantcv.plantcv import dilate, erode
 import numpy as np
 from sklearn.decomposition import PCA
 
+from utils.debugble_decorator import timed
+
 
 def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_num, max_orientation,
                                  max_response, theta, radius_constant=18):
@@ -30,9 +32,9 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
         except Exception as e:
             line_theta[i] = np.inf
             continue
-        logical = labeled_lines == i+1
+        logical = labeled_lines == i + 1
         logical_double = logical.astype(np.double)
-        #TODO number of iterations
+        # TODO number of iterations
         mask = dilate(logical_double, se, 1)
         res = estimate_local_orientations(max_orientation, max_response, theta, mask)
         index = np.argmax(res[:, 1])
@@ -41,14 +43,22 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
     return label_cost
 
 
+@timed
 def estimate_local_orientations(max_orientation, max_response, theta, mask):
     res = np.zeros((len(theta), 2))
+    res2 = np.zeros((len(theta), 2))
     flat_img = np.transpose(max_orientation).flatten()
     flat_mask = np.transpose(mask).flatten()
     flat_response = np.transpose(max_response).flatten()
-    for i in range(len(flat_img)):
-        if flat_mask[i]:
-            loc = int(flat_img[i])
-            res[loc, 0] = theta[loc]
-            res[loc, 1] = res[loc, 1] + flat_response[i]
-    return res
+    flat_img[flat_mask<=0]=-1
+    for i,t in enumerate(theta):
+        res2[i,0] = t
+        res2[i, 1] = np.sum(flat_response[flat_img==i])
+
+    # theta[flat_img.astype(np.int32)]
+    # for idx in np.argwhere(flat_img > 0):
+    #     if flat_mask[idx]:
+    #         loc = int(flat_img[idx])
+    #         res[loc, 0] = theta[loc]
+    #         res[loc, 1] = res[loc, 1] + flat_response[idx]
+    return res2

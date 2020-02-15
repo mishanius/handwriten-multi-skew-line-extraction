@@ -22,6 +22,7 @@ from plantcv.plantcv.morphology import skeletonize, find_branch_pts
 
 MATLAB_ROOT = "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2"
 end_points = None
+misha = None
 cm = plt.get_cmap('gray')
 kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
 
@@ -30,30 +31,29 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
     num_of_knots = 20
     pca = PCA()
     # TODO deside if need transpose
-    temp = regionprops(newLines)
-    numOfKnots = 20
-    # end_points = np.zeros((newLinesNum, 8))
-    # for i in range(newLinesNum):
-    #     try:
-    #         pixel_list = temp[i].coords
-    #         pca_res = pca.fit(pixel_list)
-    #         pcav = pca_res.components_[0]
-    #         theta = math.atan(pcav[1] / pcav[0])
-    #         transformation = np.array([[math.cos(-theta), -math.sin(-theta)], [math.sin(-theta), math.cos(-theta)]])
-    #         rotated_pixels = np.matmul(transformation, np.transpose(pixel_list))
-    #     except Exception as e:
-    #         continue
-    #
-    #     x_rotated = rotated_pixels[0, :]
-    #     y_rotated = rotated_pixels[1, :]
-    #     # here is the slm-----------
-    #     #     print(np.concatenate((np.transpose(x_endP),np.transpose(y_endP)),0))
-    #     # here is the slm-----------
-    #     x_endP = slm_knots[[3, 0, numOfKnots - 4, numOfKnots - 1]]
-    #     y_endP = slm_coef[[3, 0, numOfKnots - 4, numOfKnots - 1]]
-    #     r_inv = np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
-    #     temp = np.matmul(r_inv, np.concatenate((np.transpose(x_endP), np.transpose(y_endP)), 0))
-    #     end_points[i, :] = temp.flatten('F')
+    temp = regionprops(newLines.astype(np.int32))
+    end_points = np.zeros((newLinesNum, 8))
+    for i in range(newLinesNum):
+        try:
+            pixel_list = temp[i].coords
+            pca_res = pca.fit(pixel_list)
+            pcav = pca_res.components_[0]
+            theta = math.atan(pcav[1] / pcav[0])
+            transformation = np.array([[math.cos(-theta), -math.sin(-theta)], [math.sin(-theta), math.cos(-theta)]])
+            rotated_pixels = np.matmul(transformation, np.transpose(pixel_list))
+        except Exception as e:
+            continue
+
+        x_rotated = rotated_pixels[0, :]
+        y_rotated = rotated_pixels[1, :]
+        slm = find_spline_with_numberofknots(x_rotated,y_rotated, num_of_knots, 3)
+        slm_knots = slm.get_knots()
+        slm_coef = slm.get_coeffs()
+        x_endP = slm_knots[[3, 0, num_of_knots - 4, num_of_knots - 1]]
+        y_endP = slm_coef[[3, 0, num_of_knots - 4, num_of_knots - 1]]
+        r_inv = np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
+        temp = np.matmul(r_inv, np.concatenate((np.transpose(x_endP), np.transpose(y_endP)), 0))
+        end_points[i, :] = temp.flatten('F')
 
     external_ep = np.zeros((2 * newLinesNum, 2))
     external_ep[0:newLinesNum, :] = end_points[:, 2:4]
@@ -157,6 +157,7 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
 
     Tcsr = minimum_spanning_tree(M)
     wrow, wcol = Tcsr.nonzero()
+    # newE = misha
     newE = np.transpose(np.array([wrow, wcol]))
     rows = np.argwhere(newE == n)[:, 0]
     mask = np.ones(newE.shape)
@@ -189,10 +190,12 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
                 newSegmentsCnt = newSegmentsCnt + 1
 
     cnt = int(max(np.amax(combinedLines),0))
-    for i in range(cnt):
+    plt.imshow(combinedLines, **kw)
+    plt.show()
+    for i in range(1,cnt+1):
         [L, num] = bwlabel(combinedLines == i)
         if (num > 1):
-            for j in range(num):
+            for j in range(1,num+1):
                 combinedLines[L == j] = cnt + 1
             cnt = cnt + 1
 
@@ -208,17 +211,17 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
     maxX = 0
     maxY = 0
     for i in range(len(segments2Join)):
-        X = pixelList[segments2Join[i] - 1].coords
+        X = pixelList[segments2Join[i]].coords
         minX = min(np.amin(X[:, 1]), minX)
         minY = min(np.amin(X[:, 0]), minY)
         maxX = max(np.amax(X[:, 1]), maxX)
         maxY = max(np.amax(X[:, 0]), maxY)
-
+    #tested
     CroppedLines = Lines[minY:maxY + 1, minX: maxX + 1]
 
     for i in range(length - 1):
-        bw1 = CroppedLines == segments2Join[i]
-        bw2 = CroppedLines == segments2Join[i + 1]
+        bw1 = CroppedLines == pixelList[segments2Join[i]].label
+        bw2 = CroppedLines == pixelList[segments2Join[i+1]].label
         # TODO talk to baret, no quasi-euclidean transformation avaliable https://www.mathworks.com/help/images/ref/bwdist.html
         D1 = ndimage.distance_transform_edt(bw1 == 0)
         D2 = ndimage.distance_transform_edt(bw2 == 0)
@@ -248,8 +251,8 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
             LabelNum = False
         else:
             mask = np.logical_and(mask, np.logical_not(combinedLines))
-            bw1 = Lines == segments2Join[i]
-            bw2 = Lines == segments2Join[i + 1]
+            bw1 = Lines == pixelList[segments2Join[i]].label
+            bw2 = Lines == pixelList[segments2Join[i + 1]].label
             # TODO previously no dialation
             try:
                 t = reconstruction(np.logical_or(bw1, bw2), np.logical_or(combinedLines == AdjacentIndices, mask),
@@ -342,6 +345,9 @@ if __name__ == "__main__":
     end_points = sio.loadmat(
         "{}/{}".format(MATLAB_ROOT, "endPoints.mat"))
     end_points = end_points['endPoints']
+    misha = sio.loadmat(
+        "{}/{}".format(MATLAB_ROOT, "newE.mat"))
+    misha = misha['newE']-1
     prepare_for_debug_join_segments()
     # prepare_for_debug_join_segments_helper()
     # A = 10 * np.ones((10, 10))
