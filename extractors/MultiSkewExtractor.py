@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.approximate_using_piecewise_linear_pca import approximate_using_piecewise_linear_pca
+from utils.debugble_decorator import timed, partial_image
 from utils.draw_labels import draw_labels
 from utils.label_broken_lines import label_broken_lines
 from utils.local_orientation_label_cost import local_orientation_label_cost
@@ -33,16 +34,16 @@ class MultiSkewExtractor(LineExtractorBase):
         labled_lines_original, num = bwlabel(self.bin_image)
         _, old_lines = self.__niblack_pre_process(max_response, 2 * np.round(self.char_range[1]) + 1)
         labeled_lines, lebeled_lines_num, intact_lines_num = self.split_lines(old_lines, self.char_range[1])
-        print("labeled_lines:{}\n".format(labeled_lines[150:200, 150:200]))
-        print("lebeled_lines_num:{}\n".format(lebeled_lines_num))
+        plt.imshow(labeled_lines, **kw)
+        plt.title('labeled_lines')
+        plt.show()
         cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
                                      max_orientation, max_response, theta)
         print("finished cost !!")
         _,_ ,new_lines = self.post_process_by_mfr(labled_lines_original,num, labeled_lines, lebeled_lines_num, cost, self.char_range)
-        plt.imshow(new_lines, **kw)
-        plt.title('original new lines!!!')
-        plt.show()
 
+    @timed
+    @partial_image(0)
     def __niblack_pre_process(self, max_response, n):
         im = np.double(max_response)
         # int(16.8) * 2 + 1
@@ -57,6 +58,8 @@ class MultiSkewExtractor(LineExtractorBase):
         return [thresh_niblack2, lines]
 
     @staticmethod
+    @timed
+    @partial_image(0)
     def niblack_pre_process(max_response, n, bin):
         im = np.double(max_response)
         # int(16.8) * 2 + 1
@@ -69,6 +72,8 @@ class MultiSkewExtractor(LineExtractorBase):
         return [thresh_niblack2, lines]
 
     @staticmethod
+    @timed
+    @partial_image(0)
     def split_lines(lines, max_scale):
         cm = plt.get_cmap('gray')
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}

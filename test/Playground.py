@@ -109,7 +109,7 @@ class Playground(unittest.TestCase):
 
     def test_whole_flow(self):
         angles = np.arange(0, 155, 25)
-        multi_extractor = MultiSkewExtractor('ms_25_short_short.png')
+        multi_extractor = MultiSkewExtractor('ms_25_short.png')
         multi_extractor.extract_lines(angles)
 
     def test_apply_filters_functionality(self):
