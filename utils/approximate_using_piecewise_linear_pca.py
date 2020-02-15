@@ -46,7 +46,8 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
             continue
         # slm = UnivariateSpline(sorted_x, sorted_y, len(sorted_x) * 100, k=1)
         print("knots:{}".format(len(knots)))
-        coeffs = slm.predict(knots)
+        coeffs = slm.get_coeffs()
+        # coeffs = slm.predict(knots)
         for index in range(len(knots) - 1):
             x_end_point = knots[index:index + 2]
             y_end_point = coeffs[index:index + 2]
@@ -117,11 +118,11 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
             else:
                 slm = closesed[0]
                 break
-        xHat = np.linspace(min(data_x), max(data_x), num=10000)
-        yHat = slm(xHat)
-        # plot the results
-        plt.figure()
-        plt.plot(data_x, data_y, 'o')
-        plt.plot(xHat, yHat, '-')
-        plt.show()
+    xHat = np.linspace(min(data_x), max(data_x), num=10000)
+    yHat = slm(xHat)
+    # plot the results
+    plt.figure()
+    plt.plot(data_x, data_y, 'o')
+    plt.plot(xHat, yHat, '-')
+    plt.show()
     return slm
