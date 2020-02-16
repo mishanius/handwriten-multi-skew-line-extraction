@@ -51,7 +51,6 @@ class LineExtractorBase(ABC):
         gamma = 2
         for scale in scales:
             [orientation, response] = LineExtractorBase.apply_filters(im, sz, scale, theta)
-            print("response:{}".format(response[99:120,99:120]))
             flat_response = response.flatten()
             response_map[1,:] = (scale * scale * eta) ** (gamma / 2) * flat_response
 
@@ -69,5 +68,4 @@ class LineExtractorBase(ABC):
         mat_size = (sz[0], sz[1])
         scales_res = scales_res.reshape(mat_size)
         max_response = response_map[0].reshape(mat_size)
-        print("max_response:{}".format(max_response))
         return [np.reshape(orientation_map,mat_size), scales_res, max_response]

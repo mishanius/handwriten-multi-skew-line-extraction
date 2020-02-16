@@ -1,6 +1,5 @@
+import logging
 import math
-from plantcv.plantcv import dilate
-import numpy as np
 import matplotlib.pyplot as plt
 import pwlf
 from scipy.interpolate import UnivariateSpline
@@ -11,7 +10,7 @@ from numpy import linalg as LA
 
 from utils.debugble_decorator import timed
 
-
+logger = logging.getLogger('basic_metric')
 @timed
 def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
     pca = PCA()
@@ -27,6 +26,7 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
             pca_res = pca.fit(pixel_list)
             pcav = pca_res.components_[0]
             theta = math.atan(pcav[1] / pcav[0])
+            logger.debug("theta is:{}".format(theta))
             transformation = np.array([[math.cos(-theta), -math.sin(-theta)], [math.sin(-theta), math.cos(-theta)]])
             rotated_pixels = np.matmul(transformation, np.transpose(pixel_list))
         except Exception as e:
@@ -39,13 +39,13 @@ def approximate_using_piecewise_linear_pca(lines, num, marked, ths):
         sorted_x, sorted_y = list(zip(*zipped))
         try:
             # slm, knots = alternativespline_fitting(sorted_x, sorted_y, 3)
-            slm = find_spline_with_numberofknots(sorted_x, sorted_y, 20, threshold=3, max_iterations=30)
+            slm = find_spline_with_numberofknots(sorted_x, sorted_y, 20, threshold=3, max_iterations=40)
             knots = slm.get_knots()
         except Exception as e:
             fitting[i, :] = [0]
             continue
         # slm = UnivariateSpline(sorted_x, sorted_y, len(sorted_x) * 100, k=1)
-        print("knots:{}".format(len(knots)))
+        logger.debug("knots:{}".format(len(knots)))
         coeffs = slm.get_coeffs()
         # coeffs = slm.predict(knots)
         for index in range(len(knots) - 1):
@@ -71,7 +71,7 @@ def alternativespline_fitting(xdata, y, number_of_knots):
     # predict for the determined points
     xHat = np.linspace(min(xdata), max(xdata), num=10000)
     yHat = my_pwlf.predict(xHat)
-    print("knots:{}, ys:{}".format(res, my_pwlf.predict(res)))
+    logger.debug("knots:{}, ys:{}".format(res, my_pwlf.predict(res)))
     # plot the results
     plt.figure()
     plt.plot(xdata, y, 'o')
@@ -110,7 +110,7 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
             factor = factor - (factor - min_f) / 2
         iteration += 1
         if iteration > max_iterations:
-            print("cant find normal spline current number of knots:{} closeset:{}".format(number_of_knots,
+            logger.debug("cant find normal spline current number of knots:{} closeset:{}".format(number_of_knots,
                                                                                           -1 if closesed is None else
                                                                                           closesed[1]))
             if closesed is None or closesed[1] > desired_number_of_knots:
@@ -121,8 +121,8 @@ def find_spline_with_numberofknots(data_x, data_y, desired_number_of_knots, thre
     xHat = np.linspace(min(data_x), max(data_x), num=10000)
     yHat = slm(xHat)
     # plot the results
-    plt.figure()
-    plt.plot(data_x, data_y, 'o')
-    plt.plot(xHat, yHat, '-')
-    plt.show()
+    # plt.figure()
+    # plt.plot(data_x, data_y, 'o')
+    # plt.plot(xHat, yHat, '-')
+    # plt.show()
     return slm

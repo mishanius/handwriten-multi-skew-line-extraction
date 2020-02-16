@@ -8,7 +8,7 @@ def computeLinesDC(Lines, numLines, L, num, upperHeight):
     X = extractCentroids(L)
     Lines = Lines.astype(np.int)
     temp = regionprops(Lines)
-    Dc = np.zeros((numLines +1, num))
+    Dc = np.zeros((numLines + 1, num))
 
     for i in range(numLines):
         pixelList = temp[i].coords

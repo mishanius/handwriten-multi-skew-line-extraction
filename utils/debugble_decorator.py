@@ -3,16 +3,11 @@ import sys
 import time
 from functools import wraps
 import matplotlib.pyplot as plt
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 def timed(func):
     def wrapper(*args, **kwargs):
         logger = logging.getLogger('basic_metric')
-        if len(logger.handlers)==0:
-            handler = logging.StreamHandler(sys.stdout)
-            handler.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
         logger.debug("started {}".format(func.__name__))
         t_start = time.time()
         result = func(*args, **kwargs)

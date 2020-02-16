@@ -90,8 +90,6 @@ class MultiSkewExtractorTests(unittest.TestCase):
         angles = np.arange(0, 155, 25)
         scales = [16.8, 22.5]
         orient, _, response = MultiSkewExtractor.filter_document(im, scales, angles)
-        print(response[99:119, 99:119])
-        print("\norient:{}\n\n".format(orient[99:119, 99:119]))
         response = np.double(response)
         m, s = _mean_std(response, int(math.ceil(22.5) * 2 + 1))
         print("\nmean:{}\n\n".format(m[99:119, 99:119]))

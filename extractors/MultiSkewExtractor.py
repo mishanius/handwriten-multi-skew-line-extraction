@@ -13,6 +13,8 @@ from extractors.LineExtractorBase import LineExtractorBase
 from scipy.ndimage import label as bwlabel
 import cv2
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from utils.approximate_using_piecewise_linear_pca import approximate_using_piecewise_linear_pca
 from utils.debugble_decorator import timed, partial_image
@@ -30,17 +32,16 @@ class MultiSkewExtractor(LineExtractorBase):
 
         max_orientation, _, max_response = MultiSkewExtractor.filter_document(self.image_to_process, self.char_range,
                                                                               theta)
-        print("max_response:{}".format(max_response[99:120, 99:120]))
         labled_lines_original, num = bwlabel(self.bin_image)
         _, old_lines = self.__niblack_pre_process(max_response, 2 * np.round(self.char_range[1]) + 1)
         labeled_lines, lebeled_lines_num, intact_lines_num = self.split_lines(old_lines, self.char_range[1])
         plt.imshow(labeled_lines, **kw)
         plt.title('labeled_lines')
         plt.show()
-        cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
-                                     max_orientation, max_response, theta)
-        print("finished cost !!")
-        _,_ ,new_lines = self.post_process_by_mfr(labled_lines_original,num, labeled_lines, lebeled_lines_num, cost, self.char_range)
+        # cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
+        #                              max_orientation, max_response, theta)
+        # print("finished cost !!")
+        # _,_ ,new_lines = self.post_process_by_mfr(labled_lines_original,num, labeled_lines, lebeled_lines_num, cost, self.char_range)
 
     @timed
     @partial_image(0)
@@ -57,9 +58,8 @@ class MultiSkewExtractor(LineExtractorBase):
         r = label2rgb(labled_lines, bg_color=(0, 0, 0))
         return [thresh_niblack2, lines]
 
+    #TODO REMOVE this static
     @staticmethod
-    @timed
-    @partial_image(0)
     def niblack_pre_process(max_response, n, bin):
         im = np.double(max_response)
         # int(16.8) * 2 + 1
@@ -146,6 +146,7 @@ class MultiSkewExtractor(LineExtractorBase):
 
         return labeled_lines, labeled_lines_num, intact_lines_num
 
+    @timed
     @staticmethod
     def compute_line_label_cost(raw_labeled_lines, labeled_lines, labeled_lines_num, intact_lines_num, max_orientation,
                                 max_response, theta, radius_constant=18):
@@ -165,6 +166,7 @@ class MultiSkewExtractor(LineExtractorBase):
             orientation_label_cost = np.zeros(labeled_lines_num + 1, 1)
         return orientation_label_cost + density_label_cost
 
+    @timed
     @staticmethod
     def post_process_by_mfr(labeled_raw_components, raw_components_num, labeled_lines, labeled_lines_num, cost, char_range):
         cc_sparse_ns = computeNsSystem(labeled_raw_components, raw_components_num)
