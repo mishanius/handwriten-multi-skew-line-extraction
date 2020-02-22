@@ -38,55 +38,55 @@ class MultiSkewExtractor(LineExtractorBase):
     def extract_lines(self, theta=0):
         cm = plt.get_cmap('gray')
         kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
-        # max_orientation, _, max_response = MultiSkewExtractor.filter_document(self.image_to_process, self.char_range,
-        #                                                                       theta)
-        # labled_lines_original, num = bwlabel(self.bin_image, FULL_STRUCT)
-        # _, old_lines = self.__niblack_pre_process(max_response, 2 * np.round(self.char_range[1]) + 1)
-        # labeled_lines, lebeled_lines_num, intact_lines_num = self.split_lines(old_lines, self.char_range[1])
+        max_orientation, _, max_response = MultiSkewExtractor.filter_document(self.image_to_process, self.char_range,
+                                                                              theta)
+        labled_lines_original, num = bwlabel(self.bin_image, FULL_STRUCT)
+        _, old_lines = self.__niblack_pre_process(max_response, 2 * np.round(self.char_range[1]) + 1)
+        labeled_lines, lebeled_lines_num, intact_lines_num = self.split_lines(old_lines, self.char_range[1])
 
-        l = sio.loadmat("{}/{}".format(MATLAB_ROOT, "L.mat"))
-        labled_lines_original = l['L']
-        LabeledLines = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "LabeledLines.mat"))
-        labeled_lines = LabeledLines['LabeledLines']
-        num = 650
-        LabeledLinesNum = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "LabeledLinesNum.mat"))
-        lebeled_lines_num = LabeledLinesNum['LabeledLinesNum'][0][0]
+        # l = sio.loadmat("{}/{}".format(MATLAB_ROOT, "L.mat"))
+        # labled_lines_original = l['L']
+        # LabeledLines = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "LabeledLines.mat"))
+        # labeled_lines = LabeledLines['LabeledLines']
+        # num = 650
+        # LabeledLinesNum = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "LabeledLinesNum.mat"))
+        # lebeled_lines_num = LabeledLinesNum['LabeledLinesNum'][0][0]
+        # #
+        # intactLinesNum = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "intactLinesNum.mat"))
+        # intact_lines_num = intactLinesNum['intactLinesNum'][0][0]
+        # #
+        # max_orientation = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "max_orientation.mat"))
+        # max_orientation = max_orientation['max_orientation']
         #
-        intactLinesNum = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "intactLinesNum.mat"))
-        intact_lines_num = intactLinesNum['intactLinesNum'][0][0]
+        # max_response = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "max_response.mat"))
+        # max_response = max_response['max_response']
+        # #
+        # theta = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "options-theta.mat"))
+        # theta = theta['gg'][0]
         #
-        max_orientation = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "max_orientation.mat"))
-        max_orientation = max_orientation['max_orientation']
-
-        max_response = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "max_response.mat"))
-        max_response = max_response['max_response']
-        #
-        theta = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "options-theta.mat"))
-        theta = theta['gg'][0]
-
-        new_lines = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "newLines.mat"))
-        new_lines = new_lines['newLines']
+        # new_lines = sio.loadmat(
+        #     "{}/{}".format(MATLAB_ROOT, "newLines.mat"))
+        # new_lines = new_lines['newLines']
 
 
-        # cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
-        #                                     max_orientation, max_response, theta)
+        cost = self.compute_line_label_cost(labled_lines_original, labeled_lines, lebeled_lines_num, intact_lines_num,
+                                            max_orientation, max_response, theta)
 
         # cost_old = sio.loadmat(
         #     "{}/{}".format(MATLAB_ROOT, "LabelCost_old.mat"))
         # cost = cost_old['LabelCost']
         #
-        # _, _, new_lines = self.post_process_by_mfr(labled_lines_original, num, labeled_lines, lebeled_lines_num, cost,
-        #                                            self.char_range)
-        # new_lines, newLinesNum = permuteLabels(new_lines)
+        _, _, new_lines = self.post_process_by_mfr(labled_lines_original, num, labeled_lines, lebeled_lines_num, cost,
+                                                   self.char_range)
+        new_lines, newLinesNum = permuteLabels(new_lines)
 
-        newLinesNum =71
+        # newLinesNum =71
         combined_lines, newSegments = join_segments_skew(labled_lines_original, new_lines, newLinesNum,
                                                          self.char_range[1])
 
@@ -104,31 +104,31 @@ class MultiSkewExtractor(LineExtractorBase):
         plt.title('combined_lines2')
         plt.show()
 
-        # combined_lines = combined_lines.astype(np.int32)
-        # combinedLinesNum = np.amax(np.amax(combined_lines))
+        combined_lines = combined_lines.astype(np.int32)
+        combinedLinesNum = np.amax(np.amax(combined_lines))
 
         # combinedLinesNum = 39
         # cost = sio.loadmat(
         #     "{}/{}".format(MATLAB_ROOT, "LabelCost.mat"))
 
-        # cost = self.compute_line_label_cost(labled_lines_original, combined_lines, combinedLinesNum, combinedLinesNum,
-        #                                     max_orientation, max_response, theta)
+        cost = self.compute_line_label_cost(labled_lines_original, combined_lines, combinedLinesNum, combinedLinesNum,
+                                            max_orientation, max_response, theta)
 
         # cost = cost['LabelCost']
-        # results, _, new_lines = self.post_process_by_mfr(labled_lines_original, num, combined_lines, combinedLinesNum, cost,
-        #                                            self.char_range)
+        results, _, new_lines = self.post_process_by_mfr(labled_lines_original, num, combined_lines, combinedLinesNum, cost,
+                                                   self.char_range)
 
-        # new_lines2 = sio.loadmat("{}/{}".format(MATLAB_ROOT, "finalLines.mat"))
-        # new_lines2 = new_lines2['finalLines']
-        # r = labels2rgb(new_lines.astype(np.uint8))
-        # plt.imshow(r)
-        # plt.title('new_lines')
-        # plt.show()
-        #
-        # r = labels2rgb(new_lines2.astype(np.uint8))
-        # plt.imshow(r)
-        # plt.title('fskel2')
-        # plt.show()
+        new_lines2 = sio.loadmat("{}/{}".format(MATLAB_ROOT, "finalLines.mat"))
+        new_lines2 = new_lines2['finalLines']
+        r = labels2rgb(results.astype(np.uint8))
+        plt.imshow(r)
+        plt.title('results')
+        plt.show()
+
+        r = labels2rgb(new_lines2.astype(np.uint8))
+        plt.imshow(r)
+        plt.title('fskel2')
+        plt.show()
 
         logger = MetricLogger()
         logger.flush_all()
