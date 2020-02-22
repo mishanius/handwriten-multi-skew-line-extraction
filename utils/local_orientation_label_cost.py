@@ -20,7 +20,7 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
     border_mask = border_mask.astype(np.double)
     # area divide by perimeter
     sw = np.sum(logical_double) / np.sum(border_mask)
-    se = round(sw * radius_constant)
+    se = int(round(sw * radius_constant))
     line_theta = np.zeros((labeled_lines_num, 1))
     for i in range(intact_lines_num, labeled_lines_num):
         x = pixel_list[i].coords
@@ -32,10 +32,18 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
         except Exception as e:
             line_theta[i] = np.inf
             continue
-        logical = labeled_lines == i + 1
-        logical_double = logical.astype(np.double)
+        max_row_coord = np.amax(x, 0)[1] + se
+        min_row_coord = max(np.amin(x, 0)[1] - se, 0)
+        max_col_coord = np.amax(x, 0)[0] + se
+        min_col_coord = max(np.amin(x, 0)[0] - se, 0)
+        roi = labeled_lines[min_row_coord:max_row_coord, min_col_coord:max_col_coord]
+        logical_roi = roi == i + 1
+        # logical = labeled_lines == i + 1
+        logical_double = logical_roi.astype(np.double)
+        mask = np.full(labeled_lines.shape, False)
         # TODO number of iterations
-        mask = dilate(logical_double, se, 1)
+        mask[min_row_coord:max_row_coord, min_col_coord:max_col_coord] = dilate(logical_double, se, 1)
+        # mask = dilate(logical_double, se, 1)
         res = estimate_local_orientations(max_orientation, max_response, theta, mask)
         index = np.argmax(res[:, 1])
         local_max_orientation[i] = res[index, 0]
@@ -43,17 +51,17 @@ def local_orientation_label_cost(labeled_lines, labeled_lines_num, intact_lines_
     return label_cost
 
 
-@timed
+@timed(lgnm="estimate_local_orientations", agregated=True, log_max_runtime=True)
 def estimate_local_orientations(max_orientation, max_response, theta, mask):
     res = np.zeros((len(theta), 2))
     res2 = np.zeros((len(theta), 2))
     flat_img = np.transpose(max_orientation).flatten()
     flat_mask = np.transpose(mask).flatten()
     flat_response = np.transpose(max_response).flatten()
-    flat_img[flat_mask<=0]=-1
-    for i,t in enumerate(theta):
-        res2[i,0] = t
-        res2[i, 1] = np.sum(flat_response[flat_img==i])
+    flat_img[flat_mask <= 0] = -1
+    for i, t in enumerate(theta):
+        res2[i, 0] = t
+        res2[i, 1] = np.sum(flat_response[flat_img == i + 1])
 
     # theta[flat_img.astype(np.int32)]
     # for idx in np.argwhere(flat_img > 0):

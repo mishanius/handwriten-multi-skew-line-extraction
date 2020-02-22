@@ -13,29 +13,38 @@ from scipy import ndimage
 import matplotlib.pyplot as plt
 
 from permuteLabels import permuteLabels
+from utils.MetricLogger import MetricLogger
 from utils.approximate_using_piecewise_linear_pca import find_spline_with_numberofknots, \
-    approximate_using_piecewise_linear_pca, alternativespline_fitting
+    approximate_using_piecewise_linear_pca
 from scipy.sparse.csgraph import connected_components
 from numpy import linalg as LA
 from scipy.sparse.csgraph import minimum_spanning_tree
 from plantcv.plantcv.morphology import skeletonize, find_branch_pts
 
+from utils.debugble_decorator import partial_image, timed, numpy_cached
+
 MATLAB_ROOT = "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2"
 end_points = None
-misha = None
+misha = sio.loadmat(
+    "{}/{}".format(MATLAB_ROOT, "newE.mat"))
+misha = misha['newE'] - 1
 cm = plt.get_cmap('gray')
 kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
 
 
+@timed(lgnm="join_segments_skew", verbose=True)
+@partial_image(0, "join_segments_skew")
+@numpy_cached
 def join_segments_skew(L, newLines, newLinesNum, max_scale):
     num_of_knots = 20
     pca = PCA()
+    newLines = newLines.astype(np.int32)
     # TODO deside if need transpose
-    temp = regionprops(newLines.astype(np.int32))
+    region_props = regionprops(np.transpose(newLines.astype(np.int32)))
     end_points = np.zeros((newLinesNum, 8))
     for i in range(newLinesNum):
         try:
-            pixel_list = temp[i].coords
+            pixel_list = region_props[i].coords
             pca_res = pca.fit(pixel_list)
             pcav = pca_res.components_[0]
             theta = math.atan(pcav[1] / pcav[0])
@@ -46,13 +55,20 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
 
         x_rotated = rotated_pixels[0, :]
         y_rotated = rotated_pixels[1, :]
-        slm = find_spline_with_numberofknots(x_rotated,y_rotated, num_of_knots, 3)
+        zipped = sorted(zip(x_rotated, y_rotated))
+        sorted_x, sorted_y = list(zip(*zipped))
+        try:
+            slm = find_spline_with_numberofknots(sorted_x, sorted_y, num_of_knots, 3)
+        except Exception as e:
+            MetricLogger().warning("problem with spline in join_segments_skew - %s" % e)
+            continue
         slm_knots = slm.get_knots()
         slm_coef = slm.get_coeffs()
-        x_endP = slm_knots[[3, 0, num_of_knots - 4, num_of_knots - 1]]
-        y_endP = slm_coef[[3, 0, num_of_knots - 4, num_of_knots - 1]]
+        x_endP = slm_knots[[3, 0, len(slm_knots) - 4, len(slm_knots) - 1]]
+        y_endP = slm_coef[[3, 0, len(slm_knots) - 4, len(slm_knots) - 1]]
         r_inv = np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
-        temp = np.matmul(r_inv, np.concatenate((np.transpose(x_endP), np.transpose(y_endP)), 0))
+        temp = np.matmul(r_inv, np.concatenate(
+            (np.transpose(x_endP.reshape((4, 1))), np.transpose(y_endP.reshape((4, 1)))), 0))
         end_points[i, :] = temp.flatten('F')
 
     external_ep = np.zeros((2 * newLinesNum, 2))
@@ -63,19 +79,15 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
     nbrs = NearestNeighbors(K + 1).fit(external_ep)
     dist, indexs = nbrs.kneighbors(external_ep)
     indexs = indexs[:, 1:]
-    dist = dist[:, 1:]
     dist_mat = np.full((2 * newLinesNum, K), np.inf)
 
     for j in range(K):
         for i in range(2 * newLinesNum):
 
             lhsIdx = i % newLinesNum
-            #         print("lhsIdx:{}\n".format(lhsIdx))
-            # if lhsIdx == 0:
-            #     lhsIdx = newLinesNum - 1
+
             rhsIdx = indexs[i, j] % newLinesNum
-            # if rhsIdx == 0:
-            #     rhsIdx = newLinesNum - 1
+
             if lhsIdx == rhsIdx:
                 dist_mat[i, j] = np.inf
             else:
@@ -99,7 +111,7 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
                     LA.norm(end_points[rhsIdx, rhsOuterIndices] - end_points[lhsIdx, lhsOuterIndices])
                 l1 = LA.norm(end_points[rhsIdx, rhsInnerIndices] - end_points[lhsIdx, lhsInnerIndices])
                 dist_mat[i, j] = l / l1
-    print("DistMatrix:{}\n".format(dist_mat))
+    # print("DistMatrix:{}\n".format(dist_mat))
     dist_mat = np.exp(15 * (dist_mat - 1))
     tempMat = np.full((2 * newLinesNum, 2 * newLinesNum), np.inf)
     for i in range(2 * newLinesNum):
@@ -112,7 +124,7 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
         tempMat[i + newLinesNum, i] = 0
 
     cnt = sum(sum(tempMat != np.inf))
-    temp_to_csv = np.vstack(np.sort(np.argwhere(tempMat != np.inf)[:, 1]))
+    # temp_to_csv = np.vstack(np.sort(np.argwhere(tempMat != np.inf)[:, 1]))
     E = np.full(((cnt + 4 * newLinesNum), 2), -1)
     w = np.zeros(((cnt + 4 * newLinesNum), 1))
 
@@ -157,6 +169,9 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
 
     Tcsr = minimum_spanning_tree(M)
     wrow, wcol = Tcsr.nonzero()
+    # misha = sio.loadmat(
+    #     "{}/{}".format(MATLAB_ROOT, "newE.mat"))
+    # misha = misha['newE'] - 1
     # newE = misha
     newE = np.transpose(np.array([wrow, wcol]))
     rows = np.argwhere(newE == n)[:, 0]
@@ -183,23 +198,24 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
             continue
         else:
             lhs_rhs_idxs = [lhsIdx, rhsIdx]
-            [mask, LabelNum] = join_segments_helper(L, newLines, combinedLines, lhs_rhs_idxs, max_scale, temp)
+            [mask, LabelNum] = join_segments_helper(L, newLines, combinedLines, lhs_rhs_idxs, max_scale, region_props)
             if LabelNum:
                 new_segments[mask] = newSegmentsCnt
                 combinedLines[mask] = LabelNum
                 newSegmentsCnt = newSegmentsCnt + 1
 
-    cnt = int(max(np.amax(combinedLines),0))
-    plt.imshow(combinedLines, **kw)
-    plt.show()
-    for i in range(1,cnt+1):
+    cnt = int(max(np.amax(combinedLines), 0))
+    # plt.imshow(combinedLines, **kw)
+    # plt.show()
+    for i in range(1, cnt + 1):
         [L, num] = bwlabel(combinedLines == i)
         if (num > 1):
-            for j in range(1,num+1):
+            for j in range(1, num + 1):
                 combinedLines[L == j] = cnt + 1
             cnt = cnt + 1
 
     combinedLines, _ = permuteLabels(combinedLines)
+    return combinedLines, new_segments
 
 
 def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixelList):
@@ -212,16 +228,20 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
     maxY = 0
     for i in range(len(segments2Join)):
         X = pixelList[segments2Join[i]].coords
-        minX = min(np.amin(X[:, 1]), minX)
-        minY = min(np.amin(X[:, 0]), minY)
-        maxX = max(np.amax(X[:, 1]), maxX)
-        maxY = max(np.amax(X[:, 0]), maxY)
-    #tested
+        minX = min(np.amin(X[:, 0]), minX)
+        minY = min(np.amin(X[:, 1]), minY)
+        maxX = max(np.amax(X[:, 0]), maxX)
+        maxY = max(np.amax(X[:, 1]), maxY)
+    # tested
     CroppedLines = Lines[minY:maxY + 1, minX: maxX + 1]
+
+    # plt.imshow(CroppedLines, **kw)
+    # plt.title('CroppedLines')
+    # plt.show()
 
     for i in range(length - 1):
         bw1 = CroppedLines == pixelList[segments2Join[i]].label
-        bw2 = CroppedLines == pixelList[segments2Join[i+1]].label
+        bw2 = CroppedLines == pixelList[segments2Join[i + 1]].label
         # TODO talk to baret, no quasi-euclidean transformation avaliable https://www.mathworks.com/help/images/ref/bwdist.html
         D1 = ndimage.distance_transform_edt(bw1 == 0)
         D2 = ndimage.distance_transform_edt(bw2 == 0)
@@ -236,10 +256,10 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
 
         # plt.imshow(paths, **kw)
         # plt.show()
-
+        #
         # plt.imshow(tempMask, **kw)
         # plt.show()
-        mask[minY: maxY+1, minX: maxX+1] = tempMask
+        mask[minY: maxY + 1, minX: maxX + 1] = tempMask
         AdjacentIndices = np.unique(combinedLines[mask])
 
         rows_to_remove = np.argwhere(AdjacentIndices == 0)
@@ -272,14 +292,14 @@ def matlabic_minima(D):
     # TODO very expamsive
     lm = ndimage.minimum_filter(D, footprint=np.ones((3, 3)))
     paths = (D == lm)
-    labeld, _ = bwlabel(paths.astype(np.int32))
+    labeld, _ = bwlabel(paths.astype(np.int32), np.ones((3, 3)))
     for prop in regionprops(labeld):
         to_label = D[prop.coords[0][0], prop.coords[0][1]]
         temp = D == to_label
-        labled_temp, _ = bwlabel(temp)
+        labled_temp, _ = bwlabel(temp, np.ones((3, 3)))
         label_of_suspect = labled_temp[prop.coords[0][0], prop.coords[0][1]]
         temp_props = regionprops(labled_temp)
-        if prop.area != temp_props[label_of_suspect-1].area:
+        if prop.area != temp_props[label_of_suspect - 1].area:
             paths[labeld == prop.label] = False
     return paths
 
@@ -291,7 +311,7 @@ def extractDensity(L, Lines, numLines):
 
     for i in range(len(L_)):
         if L_[i] and mask_[i]:
-            acc[L_[i]] = acc[L_[i]] + 1
+            acc[L_[i].astype(np.int32)] = acc[L_[i].astype(np.int32)] + 1
     acc = acc[1:]
     acc = np.exp(0.2 * np.amax(acc) / acc)
     acc[acc < 6.5] = 6.5
@@ -347,7 +367,7 @@ if __name__ == "__main__":
     end_points = end_points['endPoints']
     misha = sio.loadmat(
         "{}/{}".format(MATLAB_ROOT, "newE.mat"))
-    misha = misha['newE']-1
+    misha = misha['newE'] - 1
     prepare_for_debug_join_segments()
     # prepare_for_debug_join_segments_helper()
     # A = 10 * np.ones((10, 10))

@@ -14,7 +14,7 @@ def RefineBinnaryOverlappingComponents(CCsl, CCsNum, linesL, linesNum):
 
     for i in range(len(CCsLF)):
         if CCsLF[i] and linesLF[i]:
-            res[CCsLF[i], int(linesLF[i])] = 1
+            res[CCsLF[i]-1, int(linesLF[i]-1)] = 1
 
     temp = np.sum(res, 1)
     CCindices = np.nonzero(temp > 1)

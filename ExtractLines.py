@@ -15,7 +15,7 @@ bin = cv2.bitwise_not(I)
 charRange = estimateBinaryHeight(bin)
 
 
-LineMask = LineExtraction(I, charRange)
+# LineMask = LineExtraction(I, charRange)
 # LineMask2 = LineMask.astype(int)
 # LineMask2[LineMask==False] = 0
 # LineMask2[LineMask==True] = 255
@@ -29,9 +29,9 @@ LineMask = LineExtraction(I, charRange)
 # pt.imsave("images/mask.png",LineMask)
 # LineMask =pt.imread("images/mask.png",0)
 
-# LineMask = cv2.imread('images/image_mask.png', 0)
-# LineMask = cv2.bitwise_not(LineMask)
-LineMask = np.logical_not(LineMask)
+LineMask = cv2.imread('images/image_mask.png', 0)
+LineMask = cv2.bitwise_not(LineMask)
+# LineMask = np.logical_not(LineMask)
 # pt.imshow(LineMask)
 # pt.show()
 L, num = bwlabel(bin)

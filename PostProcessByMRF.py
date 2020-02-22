@@ -1,19 +1,11 @@
-from permuteLabels import permuteLabels
 from scipy.ndimage import label as bwlabel
 from computeNsSystem import computeNsSystem
 from computeLinesDC import computeLinesDC, compute_lines_data_cost
 from computeLinesLabelCost import computeLineLabelCost
 import numpy as np
-from RefineBinnaryOverlappingComponents import RefineBinnaryOverlappingComponents
 from LineExtraction_GC_MRFminimization import LineExtraction_GC_MRFminimization, line_extraction_GC
 
-
-# def PostProcessByMRF(L, num, linesMask, charRange):
-#     CCsparseNs = computeNsSystem(L, num)
-#     [result, Labels, numLines] = PostProcessByMRFHelper(L, num, linesMask, CCsparseNs, charRange)
-#     return [result, Labels, numLines]
-
-
+# @partial_image(2, "post_process_by_mfr")
 def post_process_by_mfr(labeled_raw_components, raw_components_num, lines_mask, char_range):
     cc_sparse_ns = computeNsSystem(labeled_raw_components, raw_components_num)
     [result, labels, num_lines] = post_process_by_mfr_helper(labeled_raw_components,

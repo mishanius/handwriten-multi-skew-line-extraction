@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def permuteLabels(lines):
     lines = lines.astype(np.uint16)
     unique_labels = np.delete(np.unique(np.array(lines)), 0)

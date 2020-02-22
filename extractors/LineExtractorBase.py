@@ -6,6 +6,7 @@ from anigauss.matlabicani import anigauss
 import cv2
 
 from estimateBinaryHeight import estimateBinaryHeight
+from utils.debugble_decorator import numpy_cached
 
 
 class LineExtractorBase(ABC):
@@ -13,7 +14,7 @@ class LineExtractorBase(ABC):
     def __init__(self, image_path):
         self.image_to_process = cv2.imread(image_path, 0)
         self.bin_image = cv2.bitwise_not(self.image_to_process)
-        self.char_range = [16.8632, 17.8632, 18.8632, 19.8632, 20.8632, 21.8632]#estimateBinaryHeight(self.bin_image)
+        self.char_range = [16.8632, 22.5]#estimateBinaryHeight(self.bin_image)
         super().__init__()
 
     @abstractmethod
@@ -39,6 +40,7 @@ class LineExtractorBase(ABC):
         return [res, response]
 
     @staticmethod
+    @numpy_cached
     def filter_document(im, scales, theta=0):
         # im = np.uint8(im) * 255
         sz = [len(im), len(im[0])]
@@ -70,4 +72,4 @@ class LineExtractorBase(ABC):
         scales_res = scales_res.reshape(mat_size)
         max_response = response_map[0].reshape(mat_size)
         print("max_response:{}".format(max_response))
-        return [np.reshape(orientation_map,mat_size), scales_res, max_response]
+        return np.reshape(orientation_map,mat_size), scales_res, max_response
