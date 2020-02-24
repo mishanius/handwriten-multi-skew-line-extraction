@@ -4,9 +4,9 @@ from skimage.measure import regionprops
 import numpy as np
 from sklearn.decomposition import PCA
 from numpy import linalg as LA
-
+import matplotlib.pyplot as plt
 from utils.MetricLogger import MetricLogger
-from utils.debugble_decorator import timed
+from utils.debugble_decorator import timed, numpy_cached
 
 
 @timed(lgnm="approximate_using_piecewise_linear_pca", agregated=True, log_max_runtime=True)

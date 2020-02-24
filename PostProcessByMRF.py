@@ -18,7 +18,7 @@ def post_process_by_mfr(labeled_raw_components, raw_components_num, lines_mask, 
 
 def post_process_by_mfr_helper(labeled_raw_components, raw_components_num, line_mask, char_range, cc_sparse_ns=None):
     # line mask should be binarized already
-    line_mask_lables, n_masked_lines = bwlabel(line_mask)
+    line_mask_lables, n_masked_lines = bwlabel(line_mask, np.ones((3,3)))
     data_cost = compute_lines_data_cost(line_mask_lables, n_masked_lines, labeled_raw_components, raw_components_num,
                                         char_range[1])
 

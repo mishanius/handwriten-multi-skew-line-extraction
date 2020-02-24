@@ -11,7 +11,7 @@ from skimage.color import label2rgb
 image = cv2.imread('ms_25.png', 0)
 bin = cv2.bitwise_not(image)
 
-charRange = estimateBinaryHeight(bin)
+charRange = estimateBinaryHeight(bin, 0)
 
 
 

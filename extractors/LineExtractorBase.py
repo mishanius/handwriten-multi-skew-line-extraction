@@ -14,7 +14,7 @@ class LineExtractorBase(ABC):
     def __init__(self, image_path):
         self.image_to_process = cv2.imread(image_path, 0)
         self.bin_image = cv2.bitwise_not(self.image_to_process)
-        self.char_range = [16.8632, 22.5]#estimateBinaryHeight(self.bin_image)
+        self.char_range = estimateBinaryHeight(self.bin_image, 0.03)#[16.8632, 22.5972] #
         super().__init__()
 
     @abstractmethod
@@ -53,7 +53,7 @@ class LineExtractorBase(ABC):
         gamma = 2
         for scale in scales:
             [orientation, response] = LineExtractorBase.apply_filters(im, sz, scale, theta)
-            print("response:{}".format(response[99:120,99:120]))
+
             flat_response = response.flatten()
             response_map[1,:] = (scale * scale * eta) ** (gamma / 2) * flat_response
 

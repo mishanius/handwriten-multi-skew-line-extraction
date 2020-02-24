@@ -10,7 +10,7 @@ def extract_lines(image_path, mask_path=None):
     # Load a color image in grayscale
     I = cv2.imread(image_path, 0)
     bin = cv2.bitwise_not(I)
-    charRange = estimateBinaryHeight(bin)
+    charRange = estimateBinaryHeight(bin, 0)
     if mask_path is None:
         LineMask = LineExtraction(I, charRange)
         pt.imsave("images/mask.png", LineMask)
@@ -21,6 +21,9 @@ def extract_lines(image_path, mask_path=None):
 
     L, num = bwlabel(bin)
     [result, Labels, newLines] = post_process_by_mfr(L, num, LineMask, charRange)
+    props = regionprops(result)
+    for prop in props:
+        print(prop.coords)
     r = label2rgb(result, bg_color=(0, 0, 0))
     cv2.imshow('image', r)
     cv2.waitKey(0)

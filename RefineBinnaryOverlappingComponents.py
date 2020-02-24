@@ -26,9 +26,9 @@ def RefineBinnaryOverlappingComponents(CCsl, CCsNum, linesL, linesNum):
         linesIndices = np.nonzero(res[idx])
 
         if len(linesIndices) == 2:
-            skelLabels, _ = bwlabel(np.bitwise_and(skel, np.isin(linesL, linesIndices)))
+            skelLabels, _ = bwlabel(np.bitwise_and(skel, np.isin(linesL, linesIndices)), np.ones((3,3)))
             temp = reconstruction(np.bitwise_and(cc, skelLabels), skelLabels > 0)
-            _, num = bwlabel(temp)
+            _, num = bwlabel(temp, np.ones((3,3)))
             if num < 2:
                 continue
 

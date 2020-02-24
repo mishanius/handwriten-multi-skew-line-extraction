@@ -13,7 +13,7 @@ from utils.MetricLogger import MetricLogger
 
 DEFAULT_CACHE_PATH = os.path.join(os.path.abspath(os.getcwd()), "numpy_cache")
 GLOBAL_VERSION_MAPPING = {}
-USE_CACHE = False
+USE_CACHE = True
 
 
 def timed(lgnm=None, agregated=False, log_max_runtime=False, verbose=False):
@@ -65,13 +65,12 @@ def partial_image(index_of_output, name, binarize_image=True):
 
 def numpy_cached(func):
     def wrapper(*args, **kwargs):
-        logger = logging.getLogger('basic_metric')
         version_to_find = GLOBAL_VERSION_MAPPING.get(func.__name__, 1)
         GLOBAL_VERSION_MAPPING[func.__name__] = version_to_find + 1
         if USE_CACHE:
             for f in listdir(DEFAULT_CACHE_PATH):
                 if f == "{}_{}.npz".format(func.__name__, version_to_find):
-                    logger.debug("%s found cached file" % func.__name__)
+                    MetricLogger().info("%s found cached file" % func.__name__)
                     npzfile = np.load(os.path.join(DEFAULT_CACHE_PATH, f))
                     return unpack_npz(npzfile)
 

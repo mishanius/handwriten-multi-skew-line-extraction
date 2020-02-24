@@ -2,11 +2,17 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+import scipy.io as sio
+
+MATLAB_ROOT = "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2"
 
 def draw_labels(L, Labels):
+    labels2 = sio.loadmat(
+        "{}/{}".format(MATLAB_ROOT, "Labels.mat"))
+    labels2 = labels2['Labels']
+    print(np.array_equal(labels2.reshape((labels2.shape[0],)), np.array(Labels)))
     L = np.uint16(L)
-    size = len(L.flatten())
-    LUT = np.zeros(size, np.uint16)
+    LUT = np.zeros(65536, np.uint16)
     LUT[1:len(Labels) + 1] = Labels
     result = np.double(LUT[L])
     return result

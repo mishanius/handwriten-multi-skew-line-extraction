@@ -70,6 +70,13 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
         temp = np.matmul(r_inv, np.concatenate(
             (np.transpose(x_endP.reshape((4, 1))), np.transpose(y_endP.reshape((4, 1)))), 0))
         end_points[i, :] = temp.flatten('F')
+# TODO
+#     end_points = sio.loadmat(
+#         "{}/{}".format(MATLAB_ROOT, "endPoints.mat"))
+#     end_points = end_points['endPoints']
+# TODO
+
+
 
     external_ep = np.zeros((2 * newLinesNum, 2))
     external_ep[0:newLinesNum, :] = end_points[:, 2:4]
@@ -112,6 +119,7 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
                 l1 = LA.norm(end_points[rhsIdx, rhsInnerIndices] - end_points[lhsIdx, lhsInnerIndices])
                 dist_mat[i, j] = l / l1
     # print("DistMatrix:{}\n".format(dist_mat))
+
     dist_mat = np.exp(15 * (dist_mat - 1))
     tempMat = np.full((2 * newLinesNum, 2 * newLinesNum), np.inf)
     for i in range(2 * newLinesNum):
@@ -169,10 +177,12 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
 
     Tcsr = minimum_spanning_tree(M)
     wrow, wcol = Tcsr.nonzero()
+    # TODO
     # misha = sio.loadmat(
     #     "{}/{}".format(MATLAB_ROOT, "newE.mat"))
     # misha = misha['newE'] - 1
     # newE = misha
+    # TODO
     newE = np.transpose(np.array([wrow, wcol]))
     rows = np.argwhere(newE == n)[:, 0]
     mask = np.ones(newE.shape)
@@ -208,11 +218,11 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
     # plt.imshow(combinedLines, **kw)
     # plt.show()
     for i in range(1, cnt + 1):
-        [L, num] = bwlabel(combinedLines == i)
-        if (num > 1):
+        [L, num] = bwlabel(combinedLines == i, np.ones((3,3)))
+        if num > 1:
             for j in range(1, num + 1):
                 combinedLines[L == j] = cnt + 1
-            cnt = cnt + 1
+                cnt = cnt + 1
 
     combinedLines, _ = permuteLabels(combinedLines)
     return combinedLines, new_segments

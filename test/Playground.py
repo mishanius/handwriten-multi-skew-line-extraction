@@ -100,13 +100,6 @@ class Playground(unittest.TestCase):
         fitting = approximate_using_piecewise_linear_pca(image_mock, 2, [], None)
         print(fitting)
 
-    def test_morphology_tests(self):
-        im = cv2.imread("../circles.png", 0)
-        # im[im > 1] = [1]
-        # skeleton = skeletonize(im)
-        plt.imshow(im)
-        plt.show()
-
     def test_whole_flow(self):
         angles = np.arange(0, 155, 25)
         multi_extractor = MultiSkewExtractor('test/ms_25_short.png')
