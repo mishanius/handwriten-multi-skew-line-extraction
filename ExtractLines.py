@@ -74,4 +74,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     prepare_cache(args.no_cache, args.reset_cache)
     extractors[args.extractor](args.image_path, args.mask_path)
-    extract_lines(args.image_path, args.mask_path)
