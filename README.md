@@ -1,11 +1,11 @@
-##setup
+## Setup
 1. compile anigauss as shared .dll(windows) or .so (linux) 
 2. compile GCO using the provided makefile - `make testMain`
 3. store compiled `testMain.exe` in `gco` folder
 4. store compiled `anigauss.dll` in `anigauss` folder
 
  
-###Excecution :
+### Excecution :
 To excecute the code you need to specify the following arguments: 
 1.  `--image_path` - the path of the image to process
 2.  `--extractor` - the type of the algorithm you want to use options are - `MultiSkew`,`ExtractLines`
@@ -13,17 +13,17 @@ To excecute the code you need to specify the following arguments:
      the phase of creating the mask 
 4.  `--no_cache` - wont use or update the cache.
 5.  `--reset_cache` - purge the cache, before execution. 
-####stright line extraction:
+#### Stright line extraction:
 ```text
 python ExtractLines.py --image_path binary_hetero_doc.png --extractor ExtractLines
 ```
 
-####multi skew line extraction:
+#### Multi skew line extraction:
 ```text
 python ExtractLines.py --image_path binary_hetero_doc.png --extractor MultiSkew
 ```  
 
-##project overview 
+## Project overview 
 ### multi-skew line extraction, uses the following steps
 1. `filter_document` -  uses anisotropic gaussian filter inorder to find the maximum response of each pixel and the angel that gives
 this response. from this step we will get two metricies one for the max response and the other for th e max orientation.
@@ -90,6 +90,24 @@ To show the partial result of methods that return an image I created a decorator
 2. `name` - name of the method, this will be part of the headline in the partial result image.
 3. `binarize_image` - will show a gray scale image 
 
-    
+### Examples:
+#### Input image:
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/test/ms_25_short.png "input")
+
+
+#### Partial results:
+
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/niblack.PNG "niblack")
+
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/split_lines.PNG "split lines")
+
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/post_process_by_mfr.PNG "post process by mfr")
+ 
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/join_segments_skew.PNG "join_segments_skew")
+
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/post_process_by_mfr_2.PNG "post process by mfr2")
+
+
+![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/final_result.PNG "result")
     
      
