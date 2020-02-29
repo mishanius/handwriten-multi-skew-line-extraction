@@ -1,4 +1,4 @@
-## setup
+## Setup
 1. compile anigauss as shared .dll(windows) or .so (linux) 
 2. compile GCO using the provided makefile - `make testMain`
 3. store compiled `testMain.exe` in `gco` folder
