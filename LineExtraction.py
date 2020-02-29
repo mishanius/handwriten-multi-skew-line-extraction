@@ -4,7 +4,6 @@ from BuildTreeLayer import BuildTreeLayer
 import cv2
 from approximateUsingPiecewiseLinear import approximateUsingPiecewiseLinear
 def LineExtraction(I, scales):
-    print("LineExtraction")
     _,_, max_response = filterDocument(I,scales)
 
 
@@ -13,8 +12,6 @@ def LineExtraction(I, scales):
     beginThs = findRootThreshold(max_response, endThs)
     Threshholds = np.arange(beginThs, endThs, 1)
     linesMask = TraverseTree(max_response, Threshholds, max_scale)
-
-
     return linesMask
 
 def TraverseTree(max_response, Threshholds, max_scale):
