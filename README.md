@@ -13,17 +13,17 @@ To excecute the code you need to specify the following arguments:
      the phase of creating the mask 
 4.  `--no_cache` - wont use or update the cache.
 5.  `--reset_cache` - purge the cache, before execution. 
-#### stright line extraction:
+#### Stright line extraction:
 ```text
 python ExtractLines.py --image_path binary_hetero_doc.png --extractor ExtractLines
 ```
 
-#### multi skew line extraction:
+#### Multi skew line extraction:
 ```text
 python ExtractLines.py --image_path binary_hetero_doc.png --extractor MultiSkew
 ```  
 
-## project overview 
+## Project overview 
 ### multi-skew line extraction, uses the following steps
 1. `filter_document` -  uses anisotropic gaussian filter inorder to find the maximum response of each pixel and the angel that gives
 this response. from this step we will get two metricies one for the max response and the other for th e max orientation.
@@ -90,12 +90,12 @@ To show the partial result of methods that return an image I created a decorator
 2. `name` - name of the method, this will be part of the headline in the partial result image.
 3. `binarize_image` - will show a gray scale image 
 
-### examples:
-#### input image:
+### Examples:
+#### Input image:
 ![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/test/ms_25_short.png "input")
 
 
-#### partial results:
+#### Partial results:
 
 ![alt text](https://github.com/mishanius/HandWritenDocsLineExtraction/blob/refactor-line-extractor/partial_results/niblack.PNG "niblack")
 
