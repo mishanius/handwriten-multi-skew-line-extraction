@@ -1,19 +1,22 @@
 import logging
 import os
-import sys
 import time
 from functools import wraps
 from os import listdir
-from os.path import isfile, join
 import numpy as np
 
 import matplotlib.pyplot as plt
 
-from utils.MetricLogger import MetricLogger
+from utils.MetricLogger import MetricLogger, Singleton
 
 DEFAULT_CACHE_PATH = os.path.join(os.path.abspath(os.getcwd()), "numpy_cache")
 GLOBAL_VERSION_MAPPING = {}
-USE_CACHE = True
+
+
+class CacheSwitch(metaclass=Singleton):
+    def __init__(self):
+        super().__init__()
+        self.value = True
 
 
 def timed(lgnm=None, agregated=False, log_max_runtime=False, verbose=False):
@@ -65,9 +68,11 @@ def partial_image(index_of_output, name, binarize_image=True):
 
 def numpy_cached(func):
     def wrapper(*args, **kwargs):
+        if not os.path.exists(DEFAULT_CACHE_PATH):
+            os.mkdir(DEFAULT_CACHE_PATH)
         version_to_find = GLOBAL_VERSION_MAPPING.get(func.__name__, 1)
         GLOBAL_VERSION_MAPPING[func.__name__] = version_to_find + 1
-        if USE_CACHE:
+        if CacheSwitch().value:
             for f in listdir(DEFAULT_CACHE_PATH):
                 if f == "{}_{}.npz".format(func.__name__, version_to_find):
                     MetricLogger().info("%s found cached file" % func.__name__)
@@ -75,7 +80,7 @@ def numpy_cached(func):
                     return unpack_npz(npzfile)
 
         result, *_ = func(*args, **kwargs), None
-        if USE_CACHE:
+        if CacheSwitch().value:
             cache = {}
             if type(result) == tuple:
                 for idx, r in enumerate(result):

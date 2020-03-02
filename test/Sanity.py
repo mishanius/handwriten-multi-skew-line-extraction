@@ -40,20 +40,23 @@ class SanityTestCase(Sanity):
         labeled_lines, number_of_labled_lines = bwlabel(lines)
         costs = compute_lines_data_cost(labeled_lines, number_of_labled_lines, labeled_raw_lines, number_of_raw_lines,
                                         10)
-        print(costs)
         gc = gco.GCO()
         gc.create_general_graph(4, 3)
-        # gc.set_data_cost(np.array([di for di in data_cost.transpose()]))
         gc.set_data_cost(np.array([di for di in costs]))
         gc.expansion()
         labels = gc.get_labels() + 1
-        print(labels)
+        assert np.array_equal(np.array(labels), np.array([1, 1, 1, 2]))
         res = drawLabels(labeled_raw_lines, labels)
-        print(res)
+        assert np.array_equal(res, np.array([[1., 0., 1., 1., 1., 1.],
+                                             [0., 0., 0., 0., 0., 0.],
+                                             [0., 1., 0., 0., 0., 0.],
+                                             [0., 0., 0., 0., 0., 0.],
+                                             [0., 0., 0., 0., 0., 0.],
+                                             [2., 2., 2., 2., 2., 2.]]))
 
     def test_energy_min(self):
         gc = gco.GCO()
-        big_num = 79 +1
+        big_num = 79 + 1
         small_num = 29
         gc.create_general_graph(small_num, big_num, False)
         gc.set_data_cost(np.array([np.ones((big_num,), dtype=np.int32) for di in range(small_num)]))
@@ -117,7 +120,6 @@ class LabelCostTest(Sanity):
         gc = gco.GCO()
         gc.create_general_graph(number_of_raw_lines, 3)
         gc.set_data_cost(np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]))
-        # gc.set_smooth_cost(np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]))
         gc.set_label_cost(np.array([100, 100, 50]))
 
         gc.expansion()

@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import gco
-import scipy.io
 from subprocess import Popen, PIPE
 
 NUMPY_DATA = "numpy_data"
@@ -68,10 +67,6 @@ def line_extraction_GC(num_connected_componants, num_of_lines, data_cost, cc_spa
 
     neighbors = np.empty((len(sparse), 3))
 
-    # for debug in matlab
-    # scipy.io.savemat('numpy_data/test.mat',
-    #                  {"label_cost": label_cost, "data_cost": data_cost, "smooth_cost": smooth_cost, "sparse": sparse,
-    #                   "cc_sparse_ns": cc_sparse_ns})
     if (should_solve_via_csv):
         np.savetxt(os.path.join(os.path.abspath(os.getcwd()), NUMPY_DATA, LABELS_CSV),
                    label_cost, fmt='%i', delimiter=",")
@@ -118,7 +113,7 @@ def computeEdgeWeights(W):
 
 
 def solve_via_csv(num_of_sites, num_oflabels, neighboor_pairs):
-    process = Popen(['gco/testMain2.exe',
+    process = Popen(['gco/testMain.exe',
                      num_of_sites,
                      num_oflabels,
                      neighboor_pairs,

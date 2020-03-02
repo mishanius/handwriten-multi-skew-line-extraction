@@ -25,12 +25,18 @@ int populate_matrix_test(int * matrix, int num_labels,  const std::string& input
     while (file >> temp) {
         std::stringstream          lineStream(temp);
         index_col=0;
-        while(std::getline(lineStream,cell, ','))
-        {
-            number = stoi(cell);
-            matrix[index_row*num_labels+index_col]=number;
-            index_col++;
-        }
+		if(num_labels==0){
+			number = stoi(temp);
+			matrix[index_row]=number;
+		}
+		else{
+			while(std::getline(lineStream,cell, ','))
+			{
+				number = stoi(cell);
+				matrix[index_row*num_labels+index_col]=number;
+				index_col++;
+			}
+		}
         index_row++;
     }
     return 0;
@@ -38,25 +44,31 @@ int populate_matrix_test(int * matrix, int num_labels,  const std::string& input
 
 int main(int argc, char **argv)
 {
-    int num_of_sites = stoi(argv[1]);
+    std::string data_costCsv = "data_cost.csv";
+    std::string labelsCsv = "label_cost.csv";
+    std::string neighborsCsv = "neighbors.csv";
+    std::string smoothCsv = "smooth_cost.csv";
+	int num_of_sites = stoi(argv[1]);
     int num_of_labels = stoi(argv[2]);
     int num_of_neigboors_pairs = stoi(argv[3]);
-    GCoptimizationGeneralGraph *gc = new GCoptimizationGeneralGraph(245,13);
+	if(argc>4){
+		data_costCsv = argv[4];
+		labelsCsv = argv[5];
+		neighborsCsv = argv[6];
+		smoothCsv = argv[7];
+	}
+    GCoptimizationGeneralGraph *gc = new GCoptimizationGeneralGraph(num_of_sites,num_of_labels);
     int *data_matrix = new int[num_of_sites*num_of_labels];
     int *labels = new int[num_of_labels];
     int *neighbors = new int[num_of_neigboors_pairs*3];
     int *smooth = new int[num_of_labels*num_of_labels];
-    std::string data_costCsv = "/home/michael/Documents/HandWritenDocsLineExtraction/numpy_data/data_cost.csv";
-    std::string labelsCsv = "/home/michael/Documents/HandWritenDocsLineExtraction/numpy_data/label_cost.csv";
-    std::string neighborsCsv = "/home/michael/Documents/HandWritenDocsLineExtraction/numpy_data/neighbors.csv";
-    std::string smoothCsv = "/home/michael/Documents/HandWritenDocsLineExtraction/numpy_data/smooth_cost.csv";
     populate_matrix_test(data_matrix, num_of_labels, data_costCsv);
-    populate_matrix_test(labels, 0, labelsCsv);
-    populate_matrix_test(neighbors, 3, neighborsCsv);
-    populate_matrix_test(smooth, num_of_labels, smoothCsv);
-    gc->setDataCost(data_matrix);
+	populate_matrix_test(labels, 0, labelsCsv);
+	populate_matrix_test(neighbors, 3, neighborsCsv);
+	populate_matrix_test(smooth, num_of_labels, smoothCsv);
+	gc->setDataCost(data_matrix);
     gc->setSmoothCost(smooth);
-    gc->setLabelCost(labels);
+	gc->setLabelCost(labels);
     for (int y = 0; y < num_of_neigboors_pairs; y++ ){
         gc->setNeighbors(neighbors[y*3],neighbors[y*3+1],neighbors[y*3+2]);
     }

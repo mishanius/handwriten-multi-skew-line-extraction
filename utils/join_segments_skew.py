@@ -3,14 +3,12 @@ import numpy as np
 from scipy.ndimage import label as bwlabel
 from plantcv.plantcv import dilate
 from skimage.morphology import reconstruction
-import scipy.io as sio
 from sklearn.decomposition import PCA
 from skimage.measure import regionprops
 from sklearn.neighbors import NearestNeighbors
 import numpy.matlib
 from scipy.sparse import csr_matrix
 from scipy import ndimage
-import matplotlib.pyplot as plt
 
 from permuteLabels import permuteLabels
 from utils.MetricLogger import MetricLogger
@@ -19,17 +17,9 @@ from utils.approximate_using_piecewise_linear_pca import find_spline_with_number
 from scipy.sparse.csgraph import connected_components
 from numpy import linalg as LA
 from scipy.sparse.csgraph import minimum_spanning_tree
-from plantcv.plantcv.morphology import skeletonize, find_branch_pts
+from plantcv.plantcv.morphology import skeletonize
 
 from utils.debugble_decorator import partial_image, timed, numpy_cached
-
-MATLAB_ROOT = "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2"
-end_points = None
-misha = sio.loadmat(
-    "{}/{}".format(MATLAB_ROOT, "newE.mat"))
-misha = misha['newE'] - 1
-cm = plt.get_cmap('gray')
-kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
 
 
 @timed(lgnm="join_segments_skew", verbose=True)
@@ -70,13 +60,6 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
         temp = np.matmul(r_inv, np.concatenate(
             (np.transpose(x_endP.reshape((4, 1))), np.transpose(y_endP.reshape((4, 1)))), 0))
         end_points[i, :] = temp.flatten('F')
-# TODO
-#     end_points = sio.loadmat(
-#         "{}/{}".format(MATLAB_ROOT, "endPoints.mat"))
-#     end_points = end_points['endPoints']
-# TODO
-
-
 
     external_ep = np.zeros((2 * newLinesNum, 2))
     external_ep[0:newLinesNum, :] = end_points[:, 2:4]
@@ -111,14 +94,11 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
                     lhsOuterIndices = [2, 3]
                     lhsInnerIndices = [0, 1]
 
-                #             print("lhsIdx:{}\n".format(lhsIdx))
-                #             print(end_points.shape)
                 l = LA.norm(end_points[lhsIdx, lhsOuterIndices] - end_points[lhsIdx, lhsInnerIndices]) + \
                     LA.norm(end_points[rhsIdx, rhsOuterIndices] - end_points[rhsIdx, rhsInnerIndices]) + \
                     LA.norm(end_points[rhsIdx, rhsOuterIndices] - end_points[lhsIdx, lhsOuterIndices])
                 l1 = LA.norm(end_points[rhsIdx, rhsInnerIndices] - end_points[lhsIdx, lhsInnerIndices])
                 dist_mat[i, j] = l / l1
-    # print("DistMatrix:{}\n".format(dist_mat))
 
     dist_mat = np.exp(15 * (dist_mat - 1))
     tempMat = np.full((2 * newLinesNum, 2 * newLinesNum), np.inf)
@@ -132,7 +112,6 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
         tempMat[i + newLinesNum, i] = 0
 
     cnt = sum(sum(tempMat != np.inf))
-    # temp_to_csv = np.vstack(np.sort(np.argwhere(tempMat != np.inf)[:, 1]))
     E = np.full(((cnt + 4 * newLinesNum), 2), -1)
     w = np.zeros(((cnt + 4 * newLinesNum), 1))
 
@@ -177,12 +156,6 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
 
     Tcsr = minimum_spanning_tree(M)
     wrow, wcol = Tcsr.nonzero()
-    # TODO
-    # misha = sio.loadmat(
-    #     "{}/{}".format(MATLAB_ROOT, "newE.mat"))
-    # misha = misha['newE'] - 1
-    # newE = misha
-    # TODO
     newE = np.transpose(np.array([wrow, wcol]))
     rows = np.argwhere(newE == n)[:, 0]
     mask = np.ones(newE.shape)
@@ -215,8 +188,6 @@ def join_segments_skew(L, newLines, newLinesNum, max_scale):
                 newSegmentsCnt = newSegmentsCnt + 1
 
     cnt = int(max(np.amax(combinedLines), 0))
-    # plt.imshow(combinedLines, **kw)
-    # plt.show()
     for i in range(1, cnt + 1):
         [L, num] = bwlabel(combinedLines == i, np.ones((3,3)))
         if num > 1:
@@ -245,10 +216,6 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
     # tested
     CroppedLines = Lines[minY:maxY + 1, minX: maxX + 1]
 
-    # plt.imshow(CroppedLines, **kw)
-    # plt.title('CroppedLines')
-    # plt.show()
-
     for i in range(length - 1):
         bw1 = CroppedLines == pixelList[segments2Join[i]].label
         bw2 = CroppedLines == pixelList[segments2Join[i + 1]].label
@@ -257,18 +224,12 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
         D2 = ndimage.distance_transform_edt(bw2 == 0)
         D = np.round((D1 + D2) * 32) / 32
         paths = matlabic_minima(D)
-        # TODO understand the np.inf | paths = bwmorph(paths, 'skel', np.inf)
         paths = skeletonize(paths)
 
         tempMask = dilate(paths, ksize=10, i=1)
 
         mask = np.full(L.shape, False)
 
-        # plt.imshow(paths, **kw)
-        # plt.show()
-        #
-        # plt.imshow(tempMask, **kw)
-        # plt.show()
         mask[minY: maxY + 1, minX: maxX + 1] = tempMask
         AdjacentIndices = np.unique(combinedLines[mask])
 
@@ -283,7 +244,6 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
             mask = np.logical_and(mask, np.logical_not(combinedLines))
             bw1 = Lines == pixelList[segments2Join[i]].label
             bw2 = Lines == pixelList[segments2Join[i + 1]].label
-            # TODO previously no dialation
             try:
                 t = reconstruction(np.logical_or(bw1, bw2), np.logical_or(combinedLines == AdjacentIndices, mask),
                                    method='dilation')
@@ -299,7 +259,6 @@ def join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixe
 
 
 def matlabic_minima(D):
-    # TODO very expamsive
     lm = ndimage.minimum_filter(D, footprint=np.ones((3, 3)))
     paths = (D == lm)
     labeld, _ = bwlabel(paths.astype(np.int32), np.ones((3, 3)))
@@ -326,67 +285,3 @@ def extractDensity(L, Lines, numLines):
     acc = np.exp(0.2 * np.amax(acc) / acc)
     acc[acc < 6.5] = 6.5
     return acc
-
-
-def prepare_for_debug_join_segments_helper():
-    l = sio.loadmat("{}/{}".format(MATLAB_ROOT, "L.mat"))
-    L = l['L']
-    Lines = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "Lines.mat"))
-    Lines = Lines['Lines']
-    combinedLines = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "combinedLines.mat"))
-    combinedLines = combinedLines['combinedLines']
-    segments2Join = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "segments2Join.mat"))
-    segments2Join = segments2Join['segments2Join'][0]
-    max_scale = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "max_scale.mat"))
-    max_scale = max_scale['max_scale'][0][0]
-    new_lines = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "newLines.mat"))
-    new_lines = new_lines['newLines']
-    new_lines = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "newLines.mat"))
-    new_lines = new_lines['newLines']
-    pixel_lists = regionprops(new_lines)
-    join_segments_helper(L, Lines, combinedLines, segments2Join, max_scale, pixel_lists)
-
-
-def prepare_for_debug_join_segments():
-    l = sio.loadmat("{}/{}".format(MATLAB_ROOT, "L.mat"))
-    L = l['L']
-    new_lines = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "newLines.mat"))
-    new_lines = new_lines['newLines']
-    newLinesNum = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "newLinesNum.mat"))
-    newLinesNum = newLinesNum['newLinesNum'][0][0]
-    max_scale = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "max_scale.mat"))
-    max_scale = max_scale['max_scale'][0][0]
-    # slm = sio.loadmat("{}/{}".format(MATLAB_ROOT, "slm.mat"))
-    # slm_knots = slm['knots']
-    # slm_coef = slm['coef']
-    join_segments_skew(L, new_lines, newLinesNum, max_scale)
-
-
-if __name__ == "__main__":
-    end_points = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "endPoints.mat"))
-    end_points = end_points['endPoints']
-    misha = sio.loadmat(
-        "{}/{}".format(MATLAB_ROOT, "newE.mat"))
-    misha = misha['newE'] - 1
-    prepare_for_debug_join_segments()
-    # prepare_for_debug_join_segments_helper()
-    # A = 10 * np.ones((10, 10))
-    # A[1, 1] = 3.1
-    # A[2, 1] = 3.1
-    # A[3, 1] = 3.1
-    # A[4, 1] = 2.2
-    # A[5:8, 5:8] = 8
-    # print("matlabic_minima:{}".format(matlabic_minima(A)))
-    # xdata = np.linspace(-2, 2, 50)
-    # y = np.power(xdata, 2)
-    # alternativespline_fitting(xdata, y, 3)

@@ -1,4 +1,3 @@
-
 from plantcv.plantcv import dilate
 from plantcv.plantcv.morphology import skeletonize, find_branch_pts
 from skimage.filters import apply_hysteresis_threshold
@@ -14,7 +13,7 @@ from computeNsSystem import computeNsSystem
 from extractors.LineExtractorBase import LineExtractorBase
 from scipy.ndimage import label as bwlabel
 import numpy as np
-
+import json
 from utils.MetricLogger import MetricLogger
 from utils.approximate_using_piecewise_linear_pca import approximate_using_piecewise_linear_pca
 from utils.debugble_decorator import timed, partial_image, numpy_cached
@@ -22,21 +21,15 @@ from utils.draw_labels import draw_labels, labels2rgb
 from utils.join_segments_skew import join_segments_skew
 from utils.label_broken_lines import label_broken_lines
 from utils.local_orientation_label_cost import local_orientation_label_cost
-import scipy.io as sio
 from skimage import measure
 
-MATLAB_ROOT = "C:/Users/Itay/OneDrive - post.bgu.ac.il/academic/imageProcessing/LineExtraction2"
 FULL_STRUCT = np.ones((3, 3))
 
 
 class MultiSkewExtractor(LineExtractorBase):
     @timed(lgnm="extract_lines", log_max_runtime=True, verbose=True)
     def extract_lines(self, theta=0):
-        #TODO remove this
-        theta = sio.loadmat(
-            "{}/{}".format(MATLAB_ROOT, "options-theta.mat"))
-        theta = theta['gg'][0]
-        scales = [i for i in np.arange(self.char_range[0],self.char_range[1])]
+        scales = [i for i in np.arange(self.char_range[0], self.char_range[1])]
         max_orientation, _, max_response = MultiSkewExtractor.filter_document(self.image_to_process, scales, theta)
         labled_lines_original, num = bwlabel(np.transpose(self.bin_image), FULL_STRUCT)
         labled_lines_original = np.transpose(labled_lines_original)
@@ -70,30 +63,22 @@ class MultiSkewExtractor(LineExtractorBase):
         plt.imshow(r)
         plt.title('results')
         plt.show()
-
-
-        plt.imshow(results)
-        plt.show()
-
         logger = MetricLogger()
         logger.flush_all()
         logger.flush_timings()
-
-        res = results.astype(np.int32).copy(order='C')
-
-        for prop in regionprops(results.astype(np.int32).copy(order='C')):
-            res[prop.bbox[0]:prop.bbox[2], prop.bbox[1]:prop.bbox[3]] = prop.convex_image * prop.label
-
-        plt.imshow(res)
-        plt.show()
-
-        contours = measure.find_contours(res, 1)
+        result_dict = {}
         plt.imshow(results)
-        for n, contour in enumerate(contours):
-            plt.plot(contour[:, 1], contour[:, 0], linewidth=2)
+        for prop in regionprops(results.astype(np.int32).copy(order='C')):
+            contours = measure.find_contours(prop.convex_image*255, 1)
+            result_dict[prop.label] = []
+            for n, contour in enumerate(contours):
+                contour[:] = contour[:] + prop.bbox[:2]
+                plt.plot(contour[:, 1], contour[:, 0], linewidth=2)
+                result_dict[prop.label].append(contour.tolist())
 
+        json_result = json.dumps(result_dict)
         plt.show()
-
+        print(json_result)
         print("done")
 
     @timed(lgnm="__niblack_pre_process", log_max_runtime=True, verbose=True)
@@ -109,10 +94,8 @@ class MultiSkewExtractor(LineExtractorBase):
         lines = reconstruction(np.logical_and(self.bin_image, lines), lines, method='dilation')
         return thresh_niblack2, lines
 
-    #TODO remove this
+    # TODO remove this
     @staticmethod
-    @timed
-    @partial_image(0, "niblack_pre_process")
     def niblack_pre_process(max_response, n, bin):
         im = np.double(max_response)
         # int(16.8) * 2 + 1

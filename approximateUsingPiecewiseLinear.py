@@ -3,6 +3,7 @@ from scipy import optimize
 from skimage.measure import regionprops
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
+
 def approximateUsingPiecewiseLinear(L,num, marked, ths):
 
     print("num is {}".format(num))

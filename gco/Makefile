@@ -1,9 +1,20 @@
-CXX=g++
+CXX=g++ -m64
 CFLAGS=-fPIC
 
-all: libcgco.so
 
-libcgco.so: \
+ifdef OS
+   RM = del /Q
+   FixPath = $(subst /,\,$1)
+else
+   ifeq ($(shell uname), Linux)
+      RM = rm -f
+      FixPath = $1
+   endif
+endif
+
+all: libcgco.dll
+
+libcgco.dll: \
     gco_source/LinkedBlockList.o gco_source/graph.o gco_source/maxflow.o \
         gco_source/GCoptimization.o cgco.o
 	$(CXX) -shared $(CFLAGS) \
@@ -12,8 +23,7 @@ libcgco.so: \
 	    gco_source/maxflow.o \
 	    gco_source/GCoptimization.o \
 	    cgco.o \
-	    -o libcgco.so
-	yes | cp -rf libcgco.so ~/Documents/HandWritenDocsLineExtraction/gco
+	    -o libcgco.dll
 
 testMain: \
     gco_source/LinkedBlockList.o gco_source/graph.o gco_source/maxflow.o \
@@ -24,7 +34,7 @@ testMain: \
         gco_source/maxflow.o \
         gco_source/GCoptimization.o \
         testMain.o \
-        -o testMain
+        -o testMain \
 
 testMain.o: \
 	testMain.cpp gco_source/GCoptimization.h
@@ -78,12 +88,9 @@ test_wrapper: \
 	$(CXX) -L. test_wrapper.cpp \
 	    -o test_wrapper -lcgco
 
+remove_objects:
+	$(RM) $(call FixPath, gco_source/*.o)
+	$(RM) $(call FixPath, *.o)
+
 clean:
-	rm -f *.o gco_source/*.o
-
-rm:
-	rm -f *.o *.so gco_source/*.o *.zip
-
-download:
-	wget -N -O gco-v3.0.zip http://vision.csd.uwo.ca/code/gco-v3.0.zip
-	unzip -o gco-v3.0.zip -d  ./gco_source
+	$(RM) $(call FixPath, *.exe)
