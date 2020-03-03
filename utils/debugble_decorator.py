@@ -18,6 +18,11 @@ class CacheSwitch(metaclass=Singleton):
         super().__init__()
         self.value = True
 
+class PartialImageSwitch(metaclass=Singleton):
+    def __init__(self):
+        super().__init__()
+        self.value = True
+
 
 def timed(lgnm=None, agregated=False, log_max_runtime=False, verbose=False):
     def inner_function(func):
@@ -52,13 +57,14 @@ def partial_image(index_of_output, name, binarize_image=True):
             cm = plt.get_cmap('gray')
             kw = {'cmap': cm, 'interpolation': 'none', 'origin': 'upper'}
             result = func(*args)
-            temp = result[index_of_output] > 0 if binarize_image else result
-            if index_of_output < 0:
-                plt.imshow(temp, **kw)
-            else:
-                plt.imshow(temp, **kw)
-            plt.title('partial result: %s %d' % (name, next_version))
-            plt.show()
+            if PartialImageSwitch().value:
+                temp = result[index_of_output] > 0 if binarize_image else result
+                if index_of_output < 0:
+                    plt.imshow(temp, **kw)
+                else:
+                    plt.imshow(temp, **kw)
+                plt.title('partial result: %s %d' % (name, next_version))
+                plt.show()
             return result
 
         return wrapper

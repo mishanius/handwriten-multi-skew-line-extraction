@@ -10,7 +10,7 @@ from skimage.color import label2rgb
 import argparse
 
 from extractors.MultiSkewExtractor import MultiSkewExtractor
-from utils.debugble_decorator import DEFAULT_CACHE_PATH, CacheSwitch
+from utils.debugble_decorator import DEFAULT_CACHE_PATH, CacheSwitch, PartialImageSwitch
 
 
 def extract_lines(image_path, mask_path=None):
@@ -84,6 +84,8 @@ if __name__ == "__main__":
                         help='name of extraction algorithm MultiSkew or ExtractLines')
     parser.add_argument('--no_cache', action='store_false')
     parser.add_argument('--reset_cache', action='store_true')
+    parser.add_argument('--with_partial_images', action='store_true')
     args = parser.parse_args()
+    PartialImageSwitch().value = args.with_partial_images
     prepare_cache(args.no_cache, args.reset_cache)
     extractors[args.extractor](args.image_path, args.mask_path)

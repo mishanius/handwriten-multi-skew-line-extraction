@@ -28,15 +28,25 @@ To excecute the code you need to specify the following arguments:
      the phase of creating the mask 
 4.  `--no_cache` - wont use or update the cache.
 5.  `--reset_cache` - purge the cache, before execution. 
+6. `--with_partial_images` - will show image of partial result after each function (that is decorated with `@partial_image` decorator)
+#### Multi skew line extraction:
+```text
+python ExtractLines.py --image_path test/ms_25_short.png --with_partial_images --reset_cache --extractor MultiSkew
+```  
+
 #### Stright line extraction:
 ```text
 python ExtractLines.py --image_path binary_hetero_doc.png --extractor ExtractLines
 ```
 
-#### Multi skew line extraction:
+##Bug with showing images
+If for some reason matplotlib wont show images, this is due to issues with plantCv library,
+to solve this please do the following: locate plantcv directory, open `__init__.py` and
+comment out the following:
 ```text
-python ExtractLines.py --image_path binary_hetero_doc.png --extractor MultiSkew
-```  
+if "DISPLAY" not in os.environ and "MPLBACKEND" not in os.environ:
+    matplotlib.use("Agg")
+```
 
 ## Project overview 
 ### multi-skew line extraction, uses the following steps
@@ -54,7 +64,7 @@ this function is inside `LineExtractorBase`, the base class for all the extracto
       `find_spline_with_numberofknots` this function uses binary search in order to find the factor which gives us 
       the closest result. This function is very slow, this issue should be addressed in the future.
    2. according to the spline we found we latter split the blobs into intact lines and broken lines - no major 
-   implimintation differances between the python and the matlabversion.
+   implementation differences between the python and the matlab version.
       >we use Plantcv library for dilation skeletonize and find branch points operations 
 4. `compute_line_label_cost` - this function computes the cost of each label ofthe avaliable labels 
       (each line and broken line get a unique label) this function also uses `local_orientation_label_cost`, 
@@ -104,6 +114,7 @@ To show the partial result of methods that return an image I created a decorator
 1. `index_of_output` - for methods that return only one output this should be 0. 
 2. `name` - name of the method, this will be part of the headline in the partial result image.
 3. `binarize_image` - will show a gray scale image 
+> after using `@partial_image` decorator you must use `--with_partial_images` running parameter when excecuting.
 
 ### Examples:
 #### Input image:
