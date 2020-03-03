@@ -1,13 +1,17 @@
+import json
 import os
+
+from skimage import measure
+
 from estimateBinaryHeight import *
 from LineExtraction import *
 from PostProcessByMRF import *
-from matplotlib import pylab as pt
 from skimage.color import label2rgb
 import argparse
 
 from extractors.MultiSkewExtractor import MultiSkewExtractor
-from utils.debugble_decorator import USE_CACHE, DEFAULT_CACHE_PATH
+from utils.debugble_decorator import DEFAULT_CACHE_PATH, CacheSwitch
+
 
 def extract_lines(image_path, mask_path=None):
     # Load a color image in grayscale
@@ -16,7 +20,7 @@ def extract_lines(image_path, mask_path=None):
     charRange = estimateBinaryHeight(bin, 0)
     if mask_path is None:
         LineMask = LineExtraction(I, charRange)
-        cv2.imwrite("images/mask.png", LineMask*255)
+        cv2.imwrite("images/mask.png", LineMask * 255)
         LineMask = np.logical_not(LineMask)
         LineMask = LineMask.astype(np.uint)
     else:
@@ -29,22 +33,31 @@ def extract_lines(image_path, mask_path=None):
     cv2.imshow('image', r)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    props = regionprops(result)
-    for prop in props:
-        print(prop.coords)
+    result_dict = {}
+    for prop in regionprops(result.astype(np.int32).copy(order='C')):
+        contours = measure.find_contours(prop.convex_image * 255, 1)
+        result_dict[prop.label] = []
+        for n, contour in enumerate(contours):
+            contour[:] = contour[:] + prop.bbox[:2]
+            result_dict[prop.label].append(contour.tolist())
 
+    json_result = json.dumps(result_dict)
+    with open('straight_line_result.json', 'w') as f:
+        json.dump(json_result, f)
+    print("file straight_line_result.json is ready!")
 
 
 def multi_skew_line_extraction(image_path, mask_path=None):
     angles = np.arange(0, 155, 25)
     multi_extractor = MultiSkewExtractor(image_path)
-    multi_extractor.extract_lines(angles)
+    result = multi_extractor.extract_lines(angles)
+    with open('multi_skew_result.json', 'w') as f:
+        json.dump(result, f)
+    print("file multi_skew_result.json is ready!")
 
 
 def prepare_cache(with_cache=False, reset_cache=False):
-    global USE_CACHE
-    global GLOBAL_VERSION_MAPPING
-    USE_CACHE = with_cache
+    CacheSwitch().value = with_cache
     path_to_cache = DEFAULT_CACHE_PATH
     if reset_cache:
         for filename in os.listdir(path_to_cache):

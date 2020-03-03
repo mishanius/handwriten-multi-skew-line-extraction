@@ -67,19 +67,19 @@ class MultiSkewExtractor(LineExtractorBase):
         logger.flush_all()
         logger.flush_timings()
         result_dict = {}
-        plt.imshow(results)
+        # plt.imshow(results)
         for prop in regionprops(results.astype(np.int32).copy(order='C')):
             contours = measure.find_contours(prop.convex_image*255, 1)
             result_dict[prop.label] = []
             for n, contour in enumerate(contours):
                 contour[:] = contour[:] + prop.bbox[:2]
-                plt.plot(contour[:, 1], contour[:, 0], linewidth=2)
+                # plt.plot(contour[:, 1], contour[:, 0], linewidth=2)
                 result_dict[prop.label].append(contour.tolist())
 
         json_result = json.dumps(result_dict)
-        plt.show()
-        print(json_result)
+        # plt.show()
         print("done")
+        return json_result
 
     @timed(lgnm="__niblack_pre_process", log_max_runtime=True, verbose=True)
     @partial_image(0, "niblack_pre_process")

@@ -1,8 +1,23 @@
-## Setup
-1. compile anigauss as shared .dll(windows) or .so (linux) 
-2. compile GCO using the provided makefile - `make testMain`
+## Setup - for windows 
+1. download [mingw](https://sourceforge.net/projects/mingw-w64/)
+2. install and update your PATH environment variable to point to `path\to\mingw\bin` 
+    >Example : `C:\mingw-w64\x86_64-8.1.0-win32-seh-rt_v6-rev0\mingw64\bin`
+    
+    >for 64bit python install mingw 64bit
+3. open cmd and write `gcc --version` if it works then the installation was successful.
+4. cd to anigauss folder and  execute 
+    ````
+    gcc -m64 -c anigauss.c
+    gcc -m64 -shared -o  anigauss.dll anigauss.o
+    ````
+2. cd into gco folder and compile GCO using the provided makefile - 
+    ```
+    mingw32-make
+    mingw32-make testMain
+    ```
 3. store compiled `testMain.exe` in `gco` folder
 4. store compiled `anigauss.dll` in `anigauss` folder
+5. cd to project's root and `pip install -r requirements.txt`
 
  
 ### Excecution :

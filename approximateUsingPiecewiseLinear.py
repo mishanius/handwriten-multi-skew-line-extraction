@@ -1,12 +1,9 @@
 import numpy as np
-from scipy import optimize
 from skimage.measure import regionprops
 from numpy.linalg import norm
-import matplotlib.pyplot as plt
 
 def approximateUsingPiecewiseLinear(L,num, marked, ths):
 
-    print("num is {}".format(num))
     res = regionprops(L)
     numOfKnots = 20
     fitting = np.zeros((num, numOfKnots - 1))
@@ -28,10 +25,7 @@ def approximateUsingPiecewiseLinear(L,num, marked, ths):
         y_hat = np.polyval(p, y)
 
         fit = norm(y_hat-x, 1) / len(y)
-        print("first fit is {}".format(fit))
-
         fitting[i] = np.unique(fit)
-        print(fitting)
 
     res = []
     for row in fitting:
